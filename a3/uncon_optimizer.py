@@ -59,10 +59,10 @@ def uncon_optimizer(func, x0, epsilon_g, options=None):
         # options["linsearch"] = "backtrack"
         options["linsearch"] = "bracket"
 
-        options["step_init"] = 1
+        options["step_init"] = 0.9
         options["suffdec"] = 1e-4
-        options["bktrk"] = 0.7
-        options["suffcur"] = 0.9
+        options["bktrk"] = 0.5
+        options["suffcur"] = 0.5
         options["stepinc"] = 2
 
     # TODO: Your code goes here!
@@ -76,12 +76,13 @@ def uncon_optimizer(func, x0, epsilon_g, options=None):
     # for direction
     df_prev = df
     dir_prev = dir_steepdesc(df)
-    inv_hess_prev = 1/np.linalg.norm(df) * np.identity(len(x0))
+    inv_hess = 1/np.linalg.norm(df) * np.identity(len(x0))
 
     while np.linalg.norm(df, np.inf) > epsilon_g:
-        print(f"it: {it}, step: {step}, guess: {guess}, f: {f}, df: {df}")
-        dir, inv_hess_prev = get_dir(
-            options["direction"], df, df_prev, it, dir_prev, guess, guess_prev, inv_hess_prev)
+        print(
+            f"it: {it}, step: {step}, dir: {dir_prev}, guess: {guess}, f: {f}, df: {df}")
+        dir, inv_hess = get_dir(
+            options["direction"], df, df_prev, it, dir_prev, guess, guess_prev, inv_hess)
 
         phi_0 = f
         dphi_0 = np.dot(df, dir)
@@ -131,13 +132,13 @@ def conjgrad_bias(df, df_prev):
 
 def dir_bfgs(df, df_prev, it, dir_prev, x, x_prev, inv_hess_prev):
     id = np.identity(len(dir_prev))
-    if it == 0 or np.dot(df, dir_prev):
+    if it == 0 or np.dot(df, dir_prev) > 10:
         inv_hess = 1/np.linalg.norm(df) * id
     else:
         s = np.array(x) - np.array(x_prev)
         y = np.array(df) - np.array(df_prev)
         sigma = 1/(np.dot(s, y))
-        inv_hess = (id - sigma*np.outer(s, y)) * inv_hess_prev * \
+        inv_hess = (id - sigma*np.outer(s, y)) @ inv_hess_prev @ \
             (id - sigma*np.outer(y, s)) + (sigma * np.outer(s, s))
     return -np.matmul(inv_hess, df), inv_hess
 
