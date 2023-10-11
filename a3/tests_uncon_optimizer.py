@@ -46,11 +46,13 @@ class FunctionWrapperWithCounter():
     def __call__(self, x):
         """ calls the user-provided function and count the function calls"""
         self._fcalls += 1
+        print(f"call {self._fcalls}")
 
         # kill and exit if the function calls reached the limit
         if self._fcalls >= self._max_fcalls:
-            raise RuntimeError('You reached the function call limit of ' + str(self._max_fcalls) + '. Exit.')
-        
+            raise RuntimeError(
+                'You reached the function call limit of ' + str(self._max_fcalls) + '. Exit.')
+
         return self._func(x)
 
     def get_fcalls(self):
@@ -66,7 +68,7 @@ def func_slanted_quad(x):
     ----------
     x : ndarray, shape (2,)
         design variables
-    
+
     Returns
     -------
     f : float
@@ -86,6 +88,28 @@ def func_slanted_quad(x):
     return f, g
 
 
+def func_rosenbrock(x):
+    """
+    Rosenbrock function from Appendix D of the book
+
+    Parameters
+    ----------
+    x : ndarray, shape (2,)
+        design variables
+
+    Returns
+    -------
+    f : float
+        function value
+    g : ndarray, shape (2,)
+        objective gradient
+    """
+
+    f = (1 - x[0])**2 + 100*(x[1] - x[0]**2)**2
+    g = [400*x[0]**3 - 400*x[0]*x[1] + 2*x[0] - 2, 200*(x[1] - x[0]**2)]
+    return f, g
+
+
 def func_bean(x):
     """
     Bean function from Appendix D of the book
@@ -94,7 +118,7 @@ def func_bean(x):
     ----------
     x : ndarray, shape (2,)
         design variables
-    
+
     Returns
     -------
     f : float
@@ -122,23 +146,29 @@ class TestsYouMustPass(unittest.TestCase):
         func = FunctionWrapperWithCounter(func_in)
 
         # run optimizaiton
-        xopt, fopt, output = uncon_optimizer(func, x0, epsilon_g=1e-6, options=None)
+        xopt, fopt, output = uncon_optimizer(
+            func, x0, epsilon_g=1e-6, options=None)
 
         # check optimal x and f
-        np.testing.assert_allclose(xopt, xopt_ref, rtol=0, atol=1e-3, err_msg='x_opt is wrong')
-        np.testing.assert_allclose(fopt, fopt_ref, rtol=0, atol=1e-3, err_msg='f_opt is wrong')
+        np.testing.assert_allclose(
+            xopt, xopt_ref, rtol=0, atol=1e-3, err_msg='x_opt is wrong')
+        np.testing.assert_allclose(
+            fopt, fopt_ref, rtol=0, atol=1e-3, err_msg='f_opt is wrong')
 
         # check objective gradient at the optimized point
-        _, gopt = func_in(xopt)   # call original function to not increment the call counter
+        # call original function to not increment the call counter
+        _, gopt = func_in(xopt)
         gnorm = np.max(np.abs(gopt))
-        self.assertTrue(gnorm <= 1e-5, msg='Norm of objective gradient at x_opt did not satisfy |g|_infinity < 1e-6')
+        self.assertTrue(
+            gnorm <= 1e-5, msg='Norm of objective gradient at x_opt did not satisfy |g|_infinity < 1e-6')
 
         # check if alias is provided
-        self.assertIn('alias', output, msg='Could not get your alias from `output`. Make sure to set your alias as instructed in the template.')
+        self.assertIn(
+            'alias', output, msg='Could not get your alias from `output`. Make sure to set your alias as instructed in the template.')
 
         # get function calls
-        ### print('fcalls =', func.get_fcalls())
-        
+        # print('fcalls =', func.get_fcalls())
+
     def test_slanted_quad(self):
         """Slanted quadratic function"""
 
@@ -152,8 +182,29 @@ class TestsYouMustPass(unittest.TestCase):
         # run test
         self._run_actual_test(func_slanted_quad, x0, xopt_ref, fopt_ref)
 
-        print('-----------------------------------------------------------------------------')
-        print('   Your optimizer successfully solved the slanted quadratic function problem.')
+        print(
+            '-----------------------------------------------------------------------------')
+        print(
+            '   Your optimizer successfully solved the slanted quadratic function problem.')
+        print('-----------------------------------------------------------------------------\n')
+
+    def test_rosenbrock(self):
+        """Rosenbrock function"""
+
+        # optimal solution
+        xopt_ref = np.ones(2)
+        fopt_ref = 0.
+
+        # initial point
+        x0 = np.array([-1.2, 1.0])
+
+        # run test
+        self._run_actual_test(func_rosenbrock, x0, xopt_ref, fopt_ref)
+
+        print(
+            '-----------------------------------------------------------------------------')
+        print(
+            '   Your optimizer successfully solved the rosenbrock function problem.')
         print('-----------------------------------------------------------------------------\n')
 
     def test_bean(self):
@@ -169,7 +220,8 @@ class TestsYouMustPass(unittest.TestCase):
         # run test
         self._run_actual_test(func_bean, x0, xopt_ref, fopt_ref)
 
-        print('-----------------------------------------------------------------------------')
+        print(
+            '-----------------------------------------------------------------------------')
         print('   Your optimizer successfully solved the bean problem.')
         print('-----------------------------------------------------------------------------\n')
 
