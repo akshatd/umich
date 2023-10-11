@@ -52,8 +52,8 @@ def uncon_optimizer(func, x0, epsilon_g, options=None):
         # You can pass any options from your subproblem runscripts, but the autograder will not pass any options.
         # Therefore, you should sse the  defaults here for how you want me to run it on the autograder.
         options = {}
-        options["direction"] = "steepdesc"
-        options["linsearch"] = "backtrack"
+        options["direction"] = "bfgs"
+        options["linsearch"] = "bracket"
         options["step_init"] = 1
         options["suffdec"] = 1e-4
         options["bktrk"] = 0.7
@@ -191,15 +191,18 @@ def linsearch_bracket(func, guess, dir, step_init, suffdec, suffcur, stepinc):
         if (phi_2 > phi_0 + suffdec * step_2 * phi_0) or (not first and phi_2 > phi_1):
             # the end of the bracket is above the start
             step = pinpoint(func, guess, dir, step_1, step_2, suffdec, suffcur)
-            return step, xphi(func, guess, dir, step)
+            # return step, xphi(func, guess, dir, step)
+            return step
         if abs(dphi_2) <= -suffcur * dphi_0:
             # the gradient is already low enough, return
             step = step_2
-            return step, xphi(func, guess, dir, step)
+            # return step, xphi(func, guess, dir, step)
+            return step
         elif dphi_2 >= 0:
             # the gradient is increasing, can pinpoint
             step = pinpoint(func, guess, dir, step_2, step_1, suffdec, suffcur)
-            return step, xphi(func, guess, dir, step)
+            # return step, xphi(func, guess, dir, step)
+            return step
 
         else:
             # no valid bracket found, move forward and repeat
