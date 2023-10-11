@@ -53,11 +53,11 @@ def uncon_optimizer(func, x0, epsilon_g, options=None):
         # Therefore, you should sse the  defaults here for how you want me to run it on the autograder.
         options = {}
         # options["direction"] = "steepdesc"
-        # options["direction"] = "conjgrad"
-        options["direction"] = "bfgs"
+        options["direction"] = "conjgrad"
+        # options["direction"] = "bfgs"
 
-        # options["linsearch"] = "bktrk"
-        options["linsearch"] = "bracket"
+        options["linsearch"] = "backtrack"
+        # options["linsearch"] = "bracket"
 
         options["step_init"] = 1
         options["suffdec"] = 1e-4
@@ -106,8 +106,6 @@ def get_dir(dir_option, df, df_prev, it, dir_prev, x, x_prev, inv_hess_prev):
         return dir_steepdesc(df), 0
     elif dir_option == "conjgrad":
         return dir_conjgrad(df,  df_prev, it, dir_prev), 0
-    # elif dir_option == "newton":
-    #     return dir_newton(f, x0)
     elif dir_option == "bfgs":
         return dir_bfgs(df, df_prev, it, dir_prev, x, x_prev, inv_hess_prev)
     else:
@@ -115,23 +113,19 @@ def get_dir(dir_option, df, df_prev, it, dir_prev, x, x_prev, inv_hess_prev):
 
 
 def dir_steepdesc(df):
-    return -df/(np.linalg.norm(df))
+    return -normalized(df)
 
 
 def dir_conjgrad(df, df_prev, it, dir_prev):
     if it == 0:
-        return -(df/(np.linalg.norm(df)))
+        return -normalized(df)
     else:
-        return -(df/(np.linalg.norm(df))) + (max(0, conjgrad_bias(df, df_prev)) * dir_prev)
+        return -normalized(df) + (max(0, conjgrad_bias(df, df_prev)) * dir_prev)
 
 
 def conjgrad_bias(df, df_prev):
     # return np.dot(df, df)/np.dot(df_prev, df_prev) # fletcher
     return np.dot(df, (df-df_prev))/np.dot(df_prev, df_prev)  # polak
-
-
-# def dir_newton():
-#     pass
 
 
 def dir_bfgs(df, df_prev, it, dir_prev, x, x_prev, inv_hess_prev):
@@ -163,11 +157,11 @@ def linsearch_bktrk(func, guess, dir, phi_0, dphi_0, step_init, suffdec, bktrk):
     # backtracking line search
     step = step_init
     phi_step, _, df_step = xphi(func, guess, dir, step)
-    print(f"** pinpoint ** step: {step}, fx: {phi_step}")
+    print(f"** backtrack ** step: {step}, fx: {phi_step}")
     while phi_step > (phi_0 + suffdec * step * dphi_0):
         step = bktrk * step
         phi_step, _, df_step = xphi(func, guess, dir, step)
-        print(f"** pinpoint ** step: {step}, fx: {phi_step}")
+        print(f"** backtrack ** step: {step}, fx: {phi_step}")
     return step, phi_step, df_step
 
 
@@ -182,7 +176,7 @@ def linsearch_bracket(func, guess, dir, phi_0, dphi_0, step_init, suffdec, suffc
         phi_2, dphi_2, df_2 = xphi(func, guess, dir, step_2)
         print(
             f"** bracket ** step_1: {step_1}, step_2: {step_2}, phi_1: {phi_1}, phi_2: {phi_2}")
-        if (phi_2 > phi_0 + suffdec * step_2 * phi_0) or (not first and phi_2 > phi_1):
+        if (phi_2 > phi_0 + suffdec * step_2 * dphi_0) or (not first and phi_2 > phi_1):
             # the end of the bracket is above the start
             return pinpoint(func, guess, phi_0, dphi_0, dir,
                             step_1, phi_1, dphi_1, step_2, phi_2, suffdec, suffcur)
