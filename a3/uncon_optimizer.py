@@ -157,40 +157,31 @@ def get_step(lin_option, func, x, dir, step_init, suffdec, bktrk, suffcur, stepi
 def linsearch_bktrk(func, guess, dir, step_init, suffdec, bktrk):
     # backtracking line search
     step = step_init
-    # steps = [step_init]
-    # phi_0 = phi(f, guess, dir, 0)
-    # dphi_0 = dphi(df, guess, dir, 0)
     phi_0, dphi_0 = xphi(func, guess, dir, 0)
     phi_step, _ = xphi(func, guess, dir, step)
-    # phi_list = [phi_step]
     print(f"** pinpoint ** step: {step}, fx: {phi_step}")
     while phi_step > (phi_0 + suffdec * step * dphi_0):
         step = bktrk * step
         phi_step, _ = xphi(func, guess, dir, step)
         print(f"** pinpoint ** step: {step}, fx: {phi_step}")
-        # steps.append(step)
-        # phi_list.append(phi_step)
     return step
 
 
 # bracketing
 def linsearch_bracket(func, guess, dir, step_init, suffdec, suffcur, stepinc):
-    # phi_0 = phi(f, guess, dir, 0)
-    # dphi_0 = dphi(df, guess, dir, 0)
     phi_0, dphi_0 = xphi(func, guess, dir, 0)
     step_1 = 0
     step_2 = step_init
     phi_1 = phi_0
     first = True
     while True:
-        # phi_2 = phi(f, guess, dir, step_2)
-        # dphi_2 = dphi(df, guess, dir, step_2)
         phi_2, dphi_2 = xphi(func, guess, dir, step_2)
         print(
             f"** bracket ** step_1: {step_1}, step_2: {step_2}, phi_1: {phi_1}, phi_2: {phi_2}")
         if (phi_2 > phi_0 + suffdec * step_2 * phi_0) or (not first and phi_2 > phi_1):
             # the end of the bracket is above the start
-            step = pinpoint(func, guess, dir, step_1, step_2, suffdec, suffcur)
+            step = pinpoint(func, phi_0, dphi_0, guess, dir,
+                            step_1, step_2, suffdec, suffcur)
             # return step, xphi(func, guess, dir, step)
             return step
         if abs(dphi_2) <= -suffcur * dphi_0:
@@ -200,7 +191,8 @@ def linsearch_bracket(func, guess, dir, step_init, suffdec, suffcur, stepinc):
             return step
         elif dphi_2 >= 0:
             # the gradient is increasing, can pinpoint
-            step = pinpoint(func, guess, dir, step_2, step_1, suffdec, suffcur)
+            step = pinpoint(func, phi_0, dphi_0, guess, dir,
+                            step_2, step_1, suffdec, suffcur)
             # return step, xphi(func, guess, dir, step)
             return step
 
@@ -211,15 +203,8 @@ def linsearch_bracket(func, guess, dir, step_init, suffdec, suffcur, stepinc):
         first = False
 
 
-def pinpoint(func, guess, dir, step_low, step_high, suffdec, suffcur):
-    # phi_0 = phi(f, guess, dir, 0)
-    # dphi_0 = dphi(df, guess, dir, 0)
-    phi_0, dphi_0 = xphi(func, guess, dir, 0)
-    # phi_low = phi(f, guess, dir, step_low)
-    # dphi_low = dphi(df, guess, dir, step_low)
+def pinpoint(func, phi_0, dphi_0, guess, dir, step_low, step_high, suffdec, suffcur):
     phi_low, dphi_low = xphi(func, guess, dir, step_low)
-    # phi_high = phi(f, guess, dir, step_high)
-    # dphi_high = dphi(df, gues, dir, step_high)
     phi_high, _ = xphi(func, guess, dir, step_high)
     it = 0
     while True:
@@ -228,14 +213,11 @@ def pinpoint(func, guess, dir, step_low, step_high, suffdec, suffcur):
                                phi_low, phi_high, dphi_low)
         print(
             f"** pinpoint ** it: {it}, step: {step}, phi_low: {phi_low}, phi_high: {phi_high}")
-        # phi_step = phi(f, guess, dir, step)
-        # dphi_step = dphi(df, guess, dir, step)
         phi_step, dphi_step = xphi(func, guess, dir, step)
         if (phi_step > phi_0 + suffdec*step*dphi_0) or (phi_step > phi_low):
             # if the interpolated step is higher, make it the new high
             step_high = step
             phi_high = phi_step
-            # dphi_high = dphi(df, start, dir, step_high)
         else:
             # if the interpolated step is lower, check its gradient
             if abs(dphi_step) <= -suffcur*dphi_0:
@@ -259,7 +241,7 @@ def quad_interp_min(x1, x2, fx1, fx2, d_fx1):
     if np.linalg.norm(interp_min) < min(np.linalg.norm(x1), np.linalg.norm(x2)) or np.linalg.norm(interp_min) > max(np.linalg.norm(x1), np.linalg.norm(x2)):
         interp_min = (x2+x1)/2
 
-    print(f"** interp ** x1: {x1}, x2: {x2}, min: {interp_min}")
+    # print(f"** interp ** x1: {x1}, x2: {x2}, min: {interp_min}")
     return interp_min
 
 
