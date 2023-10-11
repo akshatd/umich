@@ -82,8 +82,8 @@ def uncon_optimizer(func, x0, epsilon_g, options=None):
         phi_0 = f
         dphi_0 = np.dot(df, dir)
         step_init = step*(np.dot(df_prev, dir_prev))/(np.dot(df, dir))
-        step = get_step(options["linsearch"], func, guess, dir, phi_0, dphi_0, step_init,
-                        options["suffdec"], options["bktrk"], options["suffcur"], options["stepinc"])
+        step, f, _ = get_step(options["linsearch"], func, guess, dir, phi_0, dphi_0, step_init,
+                              options["suffdec"], options["bktrk"], options["suffcur"], options["stepinc"])
 
         guess_prev = guess
         guess = guess + step * dir
@@ -171,8 +171,9 @@ def linsearch_bktrk(func, guess, dir, phi_0, dphi_0, step_init, suffdec, bktrk):
 # bracketing
 def linsearch_bracket(func, guess, dir, phi_0, dphi_0, step_init, suffdec, suffcur, stepinc):
     step_1 = 0
-    step_2 = step_init
     phi_1 = phi_0
+    dphi_1 = dphi_0
+    step_2 = step_init
     first = True
     while True:
         phi_2, dphi_2 = xphi(func, guess, dir, step_2)
@@ -180,32 +181,25 @@ def linsearch_bracket(func, guess, dir, phi_0, dphi_0, step_init, suffdec, suffc
             f"** bracket ** step_1: {step_1}, step_2: {step_2}, phi_1: {phi_1}, phi_2: {phi_2}")
         if (phi_2 > phi_0 + suffdec * step_2 * phi_0) or (not first and phi_2 > phi_1):
             # the end of the bracket is above the start
-            step = pinpoint(func, phi_0, dphi_0, guess, dir,
-                            step_1, step_2, suffdec, suffcur)
-            # return step, xphi(func, guess, dir, step)
-            return step
+            return pinpoint(func, guess, phi_0, dphi_0, dir,
+                            step_1, phi_1, dphi_1, step_2, phi_2, suffdec, suffcur)
         if abs(dphi_2) <= -suffcur * dphi_0:
             # the gradient is already low enough, return
-            step = step_2
-            # return step, xphi(func, guess, dir, step)
-            return step
+            return step_2, phi_2, dphi_2
         elif dphi_2 >= 0:
             # the gradient is increasing, can pinpoint
-            step = pinpoint(func, phi_0, dphi_0, guess, dir,
-                            step_2, step_1, suffdec, suffcur)
-            # return step, xphi(func, guess, dir, step)
-            return step
-
+            return pinpoint(func, guess, phi_0, dphi_0, dir,
+                            step_2, phi_2, dphi_2, step_1, phi_1, suffdec, suffcur)
         else:
             # no valid bracket found, move forward and repeat
             step_1 = step_2
+            phi_1 = phi_2
+            dphi_1 = dphi_2
             step_2 = stepinc*step_2
         first = False
 
 
-def pinpoint(func, phi_0, dphi_0, guess, dir, step_low, step_high, suffdec, suffcur):
-    phi_low, dphi_low = xphi(func, guess, dir, step_low)
-    phi_high, _ = xphi(func, guess, dir, step_high)
+def pinpoint(func, guess, phi_0, dphi_0, dir, step_low, phi_low, dphi_low, step_high, phi_high, suffdec, suffcur):
     it = 0
     while True:
         # interpolate to find the min
@@ -222,12 +216,16 @@ def pinpoint(func, phi_0, dphi_0, guess, dir, step_low, step_high, suffdec, suff
             # if the interpolated step is lower, check its gradient
             if abs(dphi_step) <= -suffcur*dphi_0:
                 # the gradient is low enough, exit
-                return step
+                return step, phi_step, dphi_step
             elif dphi_step * (step_high-step_low) >= 0:
                 # step predicts an increase, from here
                 # since this is already below phi_0, relocate high to the prev low
                 step_high = step_low
+                phi_high = phi_low
+
             step_low = step
+            phi_low = phi_step
+            dphi_low = dphi_step
         it += 1
 
 # interpolation
