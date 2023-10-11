@@ -53,11 +53,11 @@ def uncon_optimizer(func, x0, epsilon_g, options=None):
         # Therefore, you should sse the  defaults here for how you want me to run it on the autograder.
         options = {}
         # options["direction"] = "steepdesc"
-        options["direction"] = "conjgrad"
-        # options["direction"] = "bfgs"
+        # options["direction"] = "conjgrad"
+        options["direction"] = "bfgs"
 
-        options["linsearch"] = "backtrack"
-        # options["linsearch"] = "bracket"
+        # options["linsearch"] = "backtrack"
+        options["linsearch"] = "bracket"
 
         options["step_init"] = 1
         options["suffdec"] = 1e-4
@@ -125,7 +125,8 @@ def dir_conjgrad(df, df_prev, it, dir_prev):
 
 def conjgrad_bias(df, df_prev):
     # return np.dot(df, df)/np.dot(df_prev, df_prev) # fletcher
-    return np.dot(df, (df-df_prev))/np.dot(df_prev, df_prev)  # polak
+    # polak
+    return np.dot(df, (np.array(df)-np.array(df_prev)))/np.dot(df_prev, df_prev)
 
 
 def dir_bfgs(df, df_prev, it, dir_prev, x, x_prev, inv_hess_prev):
@@ -133,10 +134,9 @@ def dir_bfgs(df, df_prev, it, dir_prev, x, x_prev, inv_hess_prev):
     if it == 0 or np.dot(df, dir_prev):
         inv_hess = 1/np.linalg.norm(df) * id
     else:
-        s = x - x_prev
-        y = df - df_prev
+        s = np.array(x) - np.array(x_prev)
+        y = np.array(df) - np.array(df_prev)
         sigma = 1/(np.dot(s, y))
-        id - sigma*np.outer(s, y)
         inv_hess = (id - sigma*np.outer(s, y)) * inv_hess_prev * \
             (id - sigma*np.outer(y, s)) + (sigma * np.outer(s, s))
     return -np.matmul(inv_hess, df), inv_hess
@@ -172,10 +172,11 @@ def linsearch_bracket(func, guess, dir, phi_0, dphi_0, step_init, suffdec, suffc
     dphi_1 = dphi_0
     step_2 = step_init
     first = True
-    while True:
+    it = 0
+    while True and it < 10:
         phi_2, dphi_2, df_2 = xphi(func, guess, dir, step_2)
-        print(
-            f"** bracket ** step_1: {step_1}, step_2: {step_2}, phi_1: {phi_1}, phi_2: {phi_2}")
+        # print(
+        #     f"** bracket ** step_1: {step_1}, step_2: {step_2}, phi_1: {phi_1}, phi_2: {phi_2}")
         if (phi_2 > phi_0 + suffdec * step_2 * dphi_0) or (not first and phi_2 > phi_1):
             # the end of the bracket is above the start
             return pinpoint(func, guess, phi_0, dphi_0, dir,
@@ -194,16 +195,18 @@ def linsearch_bracket(func, guess, dir, phi_0, dphi_0, step_init, suffdec, suffc
             dphi_1 = dphi_2
             step_2 = stepinc*step_2
         first = False
+        it += 1
+    return step_2, phi_2, df_2
 
 
 def pinpoint(func, guess, phi_0, dphi_0, dir, step_low, phi_low, dphi_low, step_high, phi_high, suffdec, suffcur):
     it = 0
-    while True:
+    while True and it < 10:
         # interpolate to find the min
         step = quad_interp_min(step_low, step_high,
                                phi_low, phi_high, dphi_low)
-        print(
-            f"** pinpoint ** it: {it}, step: {step}, phi_low: {phi_low}, phi_high: {phi_high}")
+        # print(
+        #     f"** pinpoint ** it: {it}, step: {step}, phi_low: {phi_low}, phi_high: {phi_high}")
         phi_step, dphi_step, df_step = xphi(func, guess, dir, step)
         if (phi_step > phi_0 + suffdec*step*dphi_0) or (phi_step > phi_low):
             # if the interpolated step is higher, make it the new high
@@ -224,6 +227,7 @@ def pinpoint(func, guess, phi_0, dphi_0, dir, step_low, phi_low, dphi_low, step_
             phi_low = phi_step
             dphi_low = dphi_step
         it += 1
+    return step, phi_step, df_step
 
 # interpolation
 
@@ -233,15 +237,15 @@ def quad_interp_min(x1, x2, fx1, fx2, d_fx1):
     bottom = 2*((fx2-fx1)+d_fx1*(x1-x2))
     interp_min = top/bottom
     # see if ans is in between x1 and x2
-    if np.linalg.norm(interp_min) < min(np.linalg.norm(x1), np.linalg.norm(x2)) or np.linalg.norm(interp_min) > max(np.linalg.norm(x1), np.linalg.norm(x2)):
-        interp_min = (x2+x1)/2
+    # if np.linalg.norm(interp_min) < min(np.linalg.norm(x1), np.linalg.norm(x2)) or np.linalg.norm(interp_min) > max(np.linalg.norm(x1), np.linalg.norm(x2)):
+    #     interp_min = (x2+x1)/2
 
     # print(f"** interp ** x1: {x1}, x2: {x2}, min: {interp_min}")
     return interp_min
 
 
 def normalized(v):
-    return v / np.linalg.norm(v)
+    return np.array(v) / np.linalg.norm(v)
 
 
 def phi(f, start, dir, step):
