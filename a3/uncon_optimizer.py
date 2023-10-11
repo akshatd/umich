@@ -52,9 +52,13 @@ def uncon_optimizer(func, x0, epsilon_g, options=None):
         # You can pass any options from your subproblem runscripts, but the autograder will not pass any options.
         # Therefore, you should sse the  defaults here for how you want me to run it on the autograder.
         options = {}
+        # options["direction"] = "steepdesc"
+        # options["direction"] = "conjgrad"
         options["direction"] = "bfgs"
+
         # options["linsearch"] = "bktrk"
         options["linsearch"] = "bracket"
+
         options["step_init"] = 1
         options["suffdec"] = 1e-4
         options["bktrk"] = 0.7
@@ -82,15 +86,14 @@ def uncon_optimizer(func, x0, epsilon_g, options=None):
         phi_0 = f
         dphi_0 = np.dot(df, dir)
         step_init = step*(np.dot(df_prev, dir_prev))/(np.dot(df, dir))
-        step, f, _ = get_step(options["linsearch"], func, guess, dir, phi_0, dphi_0, step_init,
-                              options["suffdec"], options["bktrk"], options["suffcur"], options["stepinc"])
+        step, f, new_df = get_step(options["linsearch"], func, guess, dir, phi_0, dphi_0, step_init,
+                                   options["suffdec"], options["bktrk"], options["suffcur"], options["stepinc"])
 
         guess_prev = guess
         guess = guess + step * dir
         df_prev = df
         dir_prev = dir
-
-        f, df = func(guess)
+        df = new_df
         it += 1
 
     return guess, f, output
@@ -108,7 +111,7 @@ def get_dir(dir_option, df, df_prev, it, dir_prev, x, x_prev, inv_hess_prev):
     elif dir_option == "bfgs":
         return dir_bfgs(df, df_prev, it, dir_prev, x, x_prev, inv_hess_prev)
     else:
-        return dir_steepdesc(df), 0
+        return dir_bfgs(df, df_prev, it, dir_prev, x, x_prev, inv_hess_prev)
 
 
 def dir_steepdesc(df):
@@ -153,19 +156,19 @@ def get_step(lin_option, func, x, dir, phi_0, dphi_0, step_init, suffdec, bktrk,
     elif lin_option == "bracket":
         return linsearch_bracket(func, x, dir, phi_0, dphi_0, step_init, suffdec, suffcur, stepinc)
     else:
-        return linsearch_bktrk(func, x, dir, phi_0, dphi_0, step_init, suffdec, bktrk)
+        return linsearch_bracket(func, x, dir, phi_0, dphi_0, step_init, suffdec, suffcur, stepinc)
 
 
 def linsearch_bktrk(func, guess, dir, phi_0, dphi_0, step_init, suffdec, bktrk):
     # backtracking line search
     step = step_init
-    phi_step, _ = xphi(func, guess, dir, step)
+    phi_step, _, df_step = xphi(func, guess, dir, step)
     print(f"** pinpoint ** step: {step}, fx: {phi_step}")
     while phi_step > (phi_0 + suffdec * step * dphi_0):
         step = bktrk * step
-        phi_step, _ = xphi(func, guess, dir, step)
+        phi_step, _, df_step = xphi(func, guess, dir, step)
         print(f"** pinpoint ** step: {step}, fx: {phi_step}")
-    return step
+    return step, phi_step, df_step
 
 
 # bracketing
@@ -176,7 +179,7 @@ def linsearch_bracket(func, guess, dir, phi_0, dphi_0, step_init, suffdec, suffc
     step_2 = step_init
     first = True
     while True:
-        phi_2, dphi_2 = xphi(func, guess, dir, step_2)
+        phi_2, dphi_2, df_2 = xphi(func, guess, dir, step_2)
         print(
             f"** bracket ** step_1: {step_1}, step_2: {step_2}, phi_1: {phi_1}, phi_2: {phi_2}")
         if (phi_2 > phi_0 + suffdec * step_2 * phi_0) or (not first and phi_2 > phi_1):
@@ -185,7 +188,7 @@ def linsearch_bracket(func, guess, dir, phi_0, dphi_0, step_init, suffdec, suffc
                             step_1, phi_1, dphi_1, step_2, phi_2, suffdec, suffcur)
         if abs(dphi_2) <= -suffcur * dphi_0:
             # the gradient is already low enough, return
-            return step_2, phi_2, dphi_2
+            return step_2, phi_2, df_2
         elif dphi_2 >= 0:
             # the gradient is increasing, can pinpoint
             return pinpoint(func, guess, phi_0, dphi_0, dir,
@@ -207,7 +210,7 @@ def pinpoint(func, guess, phi_0, dphi_0, dir, step_low, phi_low, dphi_low, step_
                                phi_low, phi_high, dphi_low)
         print(
             f"** pinpoint ** it: {it}, step: {step}, phi_low: {phi_low}, phi_high: {phi_high}")
-        phi_step, dphi_step = xphi(func, guess, dir, step)
+        phi_step, dphi_step, df_step = xphi(func, guess, dir, step)
         if (phi_step > phi_0 + suffdec*step*dphi_0) or (phi_step > phi_low):
             # if the interpolated step is higher, make it the new high
             step_high = step
@@ -216,7 +219,7 @@ def pinpoint(func, guess, phi_0, dphi_0, dir, step_low, phi_low, dphi_low, step_
             # if the interpolated step is lower, check its gradient
             if abs(dphi_step) <= -suffcur*dphi_0:
                 # the gradient is low enough, exit
-                return step, phi_step, dphi_step
+                return step, phi_step, df_step
             elif dphi_step * (step_high-step_low) >= 0:
                 # step predicts an increase, from here
                 # since this is already below phi_0, relocate high to the prev low
@@ -260,5 +263,5 @@ def dphi(df, start, dir, step):
 
 def xphi(f, start, dir, step):
     # function , directional derivative in a specific direction
-    phi, dphi = f(start + dir*step)
-    return phi, np.dot(dphi, dir)
+    phi, df = f(start + dir*step)
+    return phi, np.dot(df, dir), df
