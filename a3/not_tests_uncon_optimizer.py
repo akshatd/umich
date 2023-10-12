@@ -20,8 +20,12 @@ import unittest
 # import your optimizer
 from uncon_optimizer import uncon_optimizer
 
-global rosenbrock_dims
 rosenbrock_dims = 2
+
+
+def set_dims(dim):
+    global rosenbrock_dims
+    rosenbrock_dims = dim
 
 
 class FunctionWrapperWithCounter():
@@ -62,7 +66,7 @@ class FunctionWrapperWithCounter():
         return self._fcalls
 
 
-def func_slanted_quad(x):
+def slanted_quad(x):
     """
     Slanted quadratic function from Appendix D of the book
 
@@ -82,12 +86,56 @@ def func_slanted_quad(x):
     beta = 1.5
 
     f = x[0]**2 + x[1]**2 - beta * x[0] * x[1]
+    return f
+
+
+def func_slanted_quad(x):
+    """
+    Slanted quadratic function from Appendix D of the book
+
+    Parameters
+    ----------
+    x : ndarray, shape (2,)
+        design variables
+
+    Returns
+    -------
+    f : float
+        function value
+    """
+
+    beta = 1.5
+
+    f = x[0]**2 + x[1]**2 - beta * x[0] * x[1]
 
     g = np.zeros(2)
     g[0] = 2 * x[0] - beta * x[1]
     g[1] = 2 * x[1] - beta * x[0]
 
     return f, g
+
+
+def bean(x):
+    """
+    Bean function from Appendix D of the book
+
+    Parameters
+    ----------
+    x : ndarray, shape (2,)
+        design variables
+
+    Returns
+    -------
+    f : float
+        function value
+    """
+
+    x1 = x[0]
+    x2 = x[1]
+
+    f = (1. - x1)**2 + (1. - x2)**2 + 0.5 * (2 * x2 - x1**2)**2
+
+    return f
 
 
 def func_bean(x):
@@ -119,6 +167,25 @@ def func_bean(x):
     return f, g
 
 
+def rosenbrock(x):
+    """
+    Rosenbrock function from Appendix D of the book
+
+    Parameters
+    ----------
+    x : ndarray, shape (2,)
+        design variables
+
+    Returns
+    -------
+    f : float
+        function value
+    """
+
+    f = (1 - x[0])**2 + 100*(x[1] - x[0]**2)**2
+    return f
+
+
 def func_rosenbrock(x):
     """
     Rosenbrock function from Appendix D of the book
@@ -145,6 +212,7 @@ def func_rosenbrock_nd(x):
     """
     Rosenbrock function from Appendix D of the book
     Partial derivatives from https://math.stackexchange.com/questions/4464953/partial-derivatives-of-the-multidimensional-rosenbrock-function
+    Also available at https://docs.scipy.org/doc/scipy/tutorial/optimize.html#broyden-fletcher-goldfarb-shanno-algorithm-method-bfgs
 
     Parameters
     ----------
@@ -177,6 +245,14 @@ def func_rosenbrock_nd(x):
 
 
 class TestsYouMustPass(unittest.TestCase):
+    options = {}
+    output = {}
+
+    def set_options(self, options_in):
+        self.options = options_in
+
+    def get_output(self):
+        return self.output
 
     def _run_actual_test(self, func_in, x0, xopt_ref, fopt_ref):
         # add function call counter to the function
@@ -184,7 +260,7 @@ class TestsYouMustPass(unittest.TestCase):
 
         # run optimizaiton
         xopt, fopt, output = uncon_optimizer(
-            func, x0, epsilon_g=1e-6, options=None)
+            func, x0, epsilon_g=1e-6, options=self.options)
 
         # check optimal x and f
         np.testing.assert_allclose(
@@ -204,7 +280,10 @@ class TestsYouMustPass(unittest.TestCase):
             'alias', output, msg='Could not get your alias from `output`. Make sure to set your alias as instructed in the template.')
 
         # get function calls
-        # print('fcalls =', func.get_fcalls())
+        print('fcalls =', func.get_fcalls())
+
+        output["func_in"] = func_in.__name__
+        self.output = output
 
     def test_slanted_quad(self):
         """Slanted quadratic function"""
@@ -282,13 +361,5 @@ class TestsYouMustPass(unittest.TestCase):
         print('-----------------------------------------------------------------------------\n')
 
 
-if __name__ == '__main__':
-    # unittest.main()
-    fucker = TestsYouMustPass()
-    # fucker.test_bean()
-    fucker.test_rosenbrock()
-    fucker.test_rosenbrock_nd()
-    rosenbrock_dims = 4
-    fucker.test_rosenbrock_nd()
-    # print(func_rosenbrock([0.1245, 0.65]))
-    # print(func_rosenbrock_nd([0.1245, 0.65]))
+# if __name__ == '__main__':
+#     unittest.main()

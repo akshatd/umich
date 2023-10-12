@@ -52,17 +52,23 @@ def uncon_optimizer(func, x0, epsilon_g, options=None):
         # You can pass any options from your subproblem runscripts, but the autograder will not pass any options.
         # Therefore, you should sse the  defaults here for how you want me to run it on the autograder.
         options = {}
-        # options["direction"] = "steepdesc"
-        # options["direction"] = "conjgrad"
-        options["direction"] = "bfgs"
 
+    if "direction" not in options:
+        # op`tions["direction"] = "steepdesc"
+        # op`tions["direction"] = "conjgrad"
+        options["direction"] = "bfgs"
+    if "linsearch" not in options:
         # options["linsearch"] = "backtrack"
         options["linsearch"] = "bracket"
-
+    if "step_init" not in options:
         options["step_init"] = 0.9
+    if "suffdec" not in options:
         options["suffdec"] = 1e-4
+    if "bktrk" not in options:
         options["bktrk"] = 0.5
+    if "suffcur" not in options:
         options["suffcur"] = 0.5
+    if "stepinc" not in options:
         options["stepinc"] = 2
 
     # TODO: Your code goes here!
@@ -72,15 +78,19 @@ def uncon_optimizer(func, x0, epsilon_g, options=None):
     step = options["step_init"]
 
     f, df = func(guess)
-
+    df_infnorm = np.linalg.norm(df, np.inf)
     # for direction
     df_prev = df
     dir_prev = dir_steepdesc(df)
     inv_hess = 1/np.linalg.norm(df) * np.identity(len(x0))
 
-    while np.linalg.norm(df, np.inf) > epsilon_g:
-        print(
-            f"it: {it}, step: {step}, dir: {dir_prev}, guess: {guess}, f: {f}, df: {df}")
+    # lists to keep track of function values
+    infnorm = [df_infnorm]
+    guesses = [guess]
+    while df_infnorm > epsilon_g:
+        # print(f"it: {it}, infnorm: {df_infnorm}")
+        # print(
+        #     f"it: {it}, step: {step}, dir: {dir_prev}, guess: {guess}, f: {f}, df: {df}")
         dir, inv_hess = get_dir(
             options["direction"], df, df_prev, it, dir_prev, guess, guess_prev, inv_hess)
 
@@ -95,7 +105,15 @@ def uncon_optimizer(func, x0, epsilon_g, options=None):
         df_prev = df
         dir_prev = dir
         df = new_df
+        df_infnorm = np.linalg.norm(df, np.inf)
+        infnorm.append(df_infnorm)
+        guesses.append(guess)
+
         it += 1
+
+    output['infnorm'] = np.array(infnorm)
+    output['guesses'] = np.array(guesses)
+    output['iterations'] = it
 
     return guess, f, output
 
@@ -158,11 +176,11 @@ def linsearch_bktrk(func, guess, dir, phi_0, dphi_0, step_init, suffdec, bktrk):
     # backtracking line search
     step = step_init
     phi_step, _, df_step = xphi(func, guess, dir, step)
-    print(f"** backtrack ** step: {step}, fx: {phi_step}")
+    # print(f"** backtrack ** step: {step}, fx: {phi_step}")
     while phi_step > (phi_0 + suffdec * step * dphi_0):
         step = bktrk * step
         phi_step, _, df_step = xphi(func, guess, dir, step)
-        print(f"** backtrack ** step: {step}, fx: {phi_step}")
+        # print(f"** backtrack ** step: {step}, fx: {phi_step}")
     return step, phi_step, df_step
 
 
