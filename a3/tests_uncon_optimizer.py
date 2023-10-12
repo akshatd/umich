@@ -20,6 +20,9 @@ import unittest
 # import your optimizer
 from uncon_optimizer import uncon_optimizer
 
+global rosenbrock_dims
+rosenbrock_dims = 2
+
 
 class FunctionWrapperWithCounter():
     """
@@ -46,7 +49,6 @@ class FunctionWrapperWithCounter():
     def __call__(self, x):
         """ calls the user-provided function and count the function calls"""
         self._fcalls += 1
-        print(f"call {self._fcalls}")
 
         # kill and exit if the function calls reached the limit
         if self._fcalls >= self._max_fcalls:
@@ -88,28 +90,6 @@ def func_slanted_quad(x):
     return f, g
 
 
-def func_rosenbrock(x):
-    """
-    Rosenbrock function from Appendix D of the book
-
-    Parameters
-    ----------
-    x : ndarray, shape (2,)
-        design variables
-
-    Returns
-    -------
-    f : float
-        function value
-    g : ndarray, shape (2,)
-        objective gradient
-    """
-
-    f = (1 - x[0])**2 + 100*(x[1] - x[0]**2)**2
-    g = [400*x[0]**3 - 400*x[0]*x[1] + 2*x[0] - 2, 200*(x[1] - x[0]**2)]
-    return f, g
-
-
 def func_bean(x):
     """
     Bean function from Appendix D of the book
@@ -135,6 +115,63 @@ def func_bean(x):
     g = np.zeros(2)
     g[0] = -2. * (1 - x1) - 2. * x1 * (2 * x2 - x1**2)
     g[1] = -2. * (1 - x2) + 2. * (2 * x2 - x1**2)
+
+    return f, g
+
+
+def func_rosenbrock(x):
+    """
+    Rosenbrock function from Appendix D of the book
+
+    Parameters
+    ----------
+    x : ndarray, shape (2,)
+        design variables
+
+    Returns
+    -------
+    f : float
+        function value
+    g : ndarray, shape (2,)
+        objective gradient
+    """
+
+    f = (1 - x[0])**2 + 100*(x[1] - x[0]**2)**2
+    g = [400*x[0]**3 - 400*x[0]*x[1] + 2*x[0] - 2, 200*(x[1] - x[0]**2)]
+    return f, g
+
+
+def func_rosenbrock_nd(x):
+    """
+    Rosenbrock function from Appendix D of the book
+    Partial derivatives from https://math.stackexchange.com/questions/4464953/partial-derivatives-of-the-multidimensional-rosenbrock-function
+
+    Parameters
+    ----------
+    x : ndarray
+        design variables
+
+    Returns
+    -------
+    f : float
+        function value
+    g : ndarray
+        objective gradient
+    """
+    n = len(x)
+    f = 0
+    for i in range(n - 1):
+        f += 100*(x[i + 1] - x[i]**2)**2 + (1 - x[i])**2
+
+    g = np.zeros(n)
+    for i in range(n):
+        if i == 0:  # no n-1 term
+            g[i] = -400*x[i]*(x[i+1]-x[i]**2) + 2*(x[i]-1)
+        elif i == n-1:  # no n+1 term
+            g[i] = 200*(x[i]-x[i-1]**2)
+        else:
+            g[i] = -400*x[i]*(x[i+1]-x[i]**2) + 2 * \
+                (x[i]-1) + 200*(x[i]-x[i-1]**2)
 
     return f, g
 
@@ -188,25 +225,6 @@ class TestsYouMustPass(unittest.TestCase):
             '   Your optimizer successfully solved the slanted quadratic function problem.')
         print('-----------------------------------------------------------------------------\n')
 
-    def test_rosenbrock(self):
-        """Rosenbrock function"""
-
-        # optimal solution
-        xopt_ref = np.ones(2)
-        fopt_ref = 0.
-
-        # initial point
-        x0 = np.array([-1.2, 1.0])
-
-        # run test
-        self._run_actual_test(func_rosenbrock, x0, xopt_ref, fopt_ref)
-
-        print(
-            '-----------------------------------------------------------------------------')
-        print(
-            '   Your optimizer successfully solved the rosenbrock function problem.')
-        print('-----------------------------------------------------------------------------\n')
-
     def test_bean(self):
         """Bean function"""
 
@@ -225,6 +243,52 @@ class TestsYouMustPass(unittest.TestCase):
         print('   Your optimizer successfully solved the bean problem.')
         print('-----------------------------------------------------------------------------\n')
 
+    def test_rosenbrock(self):
+        """Rosenbrock function"""
+
+        # optimal solution
+        xopt_ref = np.ones(2)
+        fopt_ref = 0.
+
+        # initial point
+        x0 = np.zeros(2)
+
+        # run test
+        self._run_actual_test(func_rosenbrock, x0, xopt_ref, fopt_ref)
+
+        print(
+            '-----------------------------------------------------------------------------')
+        print(
+            '   Your optimizer successfully solved the rosenbrock function problem.')
+        print('-----------------------------------------------------------------------------\n')
+
+    def test_rosenbrock_nd(self):
+        """N dimensional Rosenbrock function"""
+
+        # optimal solution
+        xopt_ref = np.ones(rosenbrock_dims)
+        fopt_ref = 0.
+
+        # initial point
+        x0 = np.zeros(rosenbrock_dims)
+
+        # run test
+        self._run_actual_test(func_rosenbrock_nd, x0, xopt_ref, fopt_ref)
+
+        print(
+            '-----------------------------------------------------------------------------')
+        print(
+            f'   Your optimizer successfully solved the {rosenbrock_dims} dimensional rosenbrock function problem.')
+        print('-----------------------------------------------------------------------------\n')
+
 
 if __name__ == '__main__':
-    unittest.main()
+    # unittest.main()
+    fucker = TestsYouMustPass()
+    # fucker.test_bean()
+    fucker.test_rosenbrock()
+    fucker.test_rosenbrock_nd()
+    rosenbrock_dims = 4
+    fucker.test_rosenbrock_nd()
+    # print(func_rosenbrock([0.1245, 0.65]))
+    # print(func_rosenbrock_nd([0.1245, 0.65]))
