@@ -9,7 +9,7 @@ The autograder will import `uncon_optimizer` from this file. If you change the f
 import numpy as np
 
 
-def uncon_optimizer(func, x0, epsilon_g, options=None):
+def uncon_optimizer(func, x0, epsilon_g, options=None, constr=None):
     """An algorithm for unconstrained optimization.
 
     Parameters
@@ -98,7 +98,7 @@ def uncon_optimizer(func, x0, epsilon_g, options=None):
         dphi_0 = np.dot(df, dir)
         step_init = step*(np.dot(df_prev, dir_prev))/(np.dot(df, dir))
         step, f, new_df = get_step(options["linsearch"], func, guess, dir, phi_0, dphi_0, step_init,
-                                   options["suffdec"], options["bktrk"], options["suffcur"], options["stepinc"])
+                                   options["suffdec"], options["bktrk"], options["suffcur"], options["stepinc"], constr)
 
         guess_prev = guess
         guess = guess + step * dir
@@ -163,7 +163,7 @@ def dir_bfgs(df, df_prev, it, dir_prev, x, x_prev, inv_hess_prev):
 
 # line search functions
 
-def get_step(lin_option, func, x, dir, phi_0, dphi_0, step_init, suffdec, bktrk, suffcur, stepinc):
+def get_step(lin_option, func, x, dir, phi_0, dphi_0, step_init, suffdec, bktrk, suffcur, stepinc, constr):
     if lin_option == "backtrack":
         return linsearch_bktrk(func, x, dir, phi_0, dphi_0, step_init, suffdec, bktrk)
     elif lin_option == "bracket":
@@ -193,6 +193,7 @@ def linsearch_bracket(func, guess, dir, phi_0, dphi_0, step_init, suffdec, suffc
     first = True
     it = 0
     while True and it < 10:
+        # print(f"guess: {guess}, guess_step:{guess + dir*step_2}")
         phi_2, dphi_2, df_2 = xphi(func, guess, dir, step_2)
         # print(
         #     f"** bracket ** step_1: {step_1}, step_2: {step_2}, phi_1: {phi_1}, phi_2: {phi_2}")
