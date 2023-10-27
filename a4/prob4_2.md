@@ -50,7 +50,7 @@ I &= \frac{h^3}{12}x_2 + \frac{b}{6}x_1^3 + \frac{h^2b}{2}x_1
 \\
 \implies I &= \frac{x_2 + 16 x_1^3  + 3 x_1}{768}
 \\
-\implies \frac{1}{I} &= \frac{768}{x_2 + 16 x_1^3  + 3 x_1}
+\implies \frac{1}{I} &= \frac{768}{3 x_1 + 16 x_1^3 + x_2}
 \end{align*}
 $$
 
@@ -67,12 +67,7 @@ $$
 The Lagrangian for this problem is
 
 $$
-\begin{align*}
-{\L}(x, \sigma, s) &= 2bx_1 + hx_2 + \sigma_1(\frac{Plh}{2I} - {\sigma}_{yield} + s_1^2) + \sigma_2(\frac{1.5P}{hx_2} - {\tau}_{yield} + s_2^2)
-\\
-\implies
-{\L}(x, \sigma, s) &= .25x_1 + .25x_2 + \frac{9600000 \sigma_1}{x_2 + 16 x_1^3  + 3 x_1} - 200000000 \sigma_1 + \sigma_1 s_1^2 + \frac{600000 \sigma_2}{x_2} - 116000000 \sigma_2 + \sigma_2 s_2^2
-\end{align*}
+{\L}(x, \sigma, s) = 2bx_1 + hx_2 + \sigma_1(\frac{Plh}{2I} - {\sigma}_{yield} + s_1^2) + \sigma_2(\frac{1.5P}{hx_2} - {\tau}_{yield} + s_2^2)
 $$
 
 Differentiating the Lagrangian with respect to all the variables, we get the
@@ -80,16 +75,16 @@ first-order optimality conditions,
 
 $$
 \begin{align*}
-% https://www.emathhelp.net/en/calculators/calculus-3/partial-derivative-calculator/?f=9600000%2F%28y+%2B+16*x%5E3+%2B+3*x%29&var=x
-&\frac{\p \L}{\p x_1} = 0.25 - \sigma_1\frac{460800000 x_1^2 + 28800000}{(16 x_1^3 + 3 x_1 + x_2)^2} &= 0
+% https://www.wolframalpha.com/input?i=d%2Fdx+2*b*x+%2B+h*y+%2B+g*%28P*l*h*768%2F%282*%28y%2B16*x%5E3%2B3*x%29%29+-+200000000+%2B+s%5E2%29+%2B+p*%281.5*P%2F%28h*y%29+-+116000000+%2B+t%5E2%29
+% x=x1, y=x2, g=sigma1, p=sigma2, s=s1, t=s2
+% just change the dx to dy etc to get the rest
+&\frac{\p \L}{\p x_1} = 2b - \frac{384 \sigma_1 P l h (3 + 48 x_1^2)}{(3 x_1 + 16 x_1^3 + x_2)^2} &= 0
 \\
-% https://www.emathhelp.net/en/calculators/calculus-3/partial-derivative-calculator/?f=9600000%2F%28y+%2B+16*x%5E3+%2B+3*x%29&var=y
-% https://www.emathhelp.net/en/calculators/calculus-3/partial-derivative-calculator/?f=600000%2Fy&var=y
-&\frac{\p \L}{\p x_2} = 0.25 - \frac{9600000 \sigma_1}{(16 x_1^3 + 3 x_1 + x_2)^2} - \frac{600000\sigma_2}{x_2^2} &= 0
+&\frac{\p \L}{\p x_2} = h - \frac{384 \sigma_1 P l h}{(3 x_1 + 16 x_1^3 + x_2)^2} - \frac{1.5 \sigma_2 P}{h x_2^2} &= 0
 \\
-&\frac{\p \L}{\p \sigma_1} = \frac{9600000}{16 x_1^3  + 3 x_1 + x_2} - 200000000 + s_1^2 &= 0
+&\frac{\p \L}{\p \sigma_1} = \frac{384 P l h}{3 x_1 + 16 x_1^3 + x_2} - {\sigma}_{yield} + s_1^2 &= 0
 \\
-&\frac{\p \L}{\p \sigma_2} = \frac{600000}{x_2} - 116000000 + s_2^2 &= 0
+&\frac{\p \L}{\p \sigma_2} = \frac{1.5 P}{h x_2} - {\tau}_{yield} + s_2^2 &= 0
 \\
 &\frac{\p \L}{\p s_1} = 2 \sigma_1 s_1 &= 0
 \\
@@ -97,20 +92,15 @@ $$
 \end{align*}
 $$
 
-Slackness conditions
+Roots of the equation found with scipy.optimize.fsolve, with initial guesses of $t_b(x_1), t_w(x_2)$ as $10cm(0.01m)$ by eyeballing the diagram, and letting $\sigma_1=\sigma_2=s_1=s_2=0$
 
 $$
-\begin{array}{ccccccccc}
-\hline
-Assumption & Meaning & x_1 & x_2 & \sigma_1 & \sigma_2 & s_1 & s_2 & Point \\ \hline
-% https://www.symbolab.com/solver/non-linear-system-of-equations-calculator/0.25%20-%20%5Cfrac%7Bo%5Cleft(460800000x%5E%7B2%7D%E2%80%8B%20%2B28800000%5Cright)%7D%7B%5Cleft(16x%5E%7B3%7D%2B3x%20%2B%20y%5Cright)%5E%7B2%7D%7D%20%3D%200%2C%20%5Cfrac%7B600000%7D%7By%7D-116000000%3D0%2C%200.25%20-%20%5Cfrac%7B9600000o%7D%7B%5Cleft(16x%5E%7B3%7D%2B3x%20%2B%20y%5Cright)%5E%7B2%7D%7D%20-%5Cfrac%7B600000p%7D%7By%5E%7B2%7D%7D%20%20%3D%200%2C%20%5Cfrac%7B9600000%7D%7B16x%5E%7B3%7D%2B3x%20%2B%20y%7D%20-200000000%20%3D0?or=input
-s_1 = 0      & g_1\text{ is active}   & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-s_2 = 0      & g_2\text{ is active}   & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\ \hline
-\sigma_1 = 0 & g_1\text{ is inactive} & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-\sigma_2 = 0 & g_2\text{ is inactive} & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\ \hline
-s_1 = 0      & g_1\text{ is active}   & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-\sigma_2 = 0 & g_2\text{ is inactive} & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\ \hline
-\sigma_1 = 0 & g_1\text{ is inactive} & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-s_2 = 0      & g_2\text{ is active}   & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\ \hline
-\end{array}
+\begin{align*}
+&t_b = 1.42603955e-02& \approx 14cm   \\
+&t_w = 5.17241379e-03& \approx 5cm    \\
+&\sigma_1 = 1.99351362e-11& \approx 0 \\
+&\sigma_2 = 7.44367855e-12& \approx 0 \\
+&s1 &= 0                              \\
+&s2 &= 0
+\end{align*}
 $$
