@@ -30,11 +30,6 @@ def plot_constrained_opt(fx, constr1, opt, title):
     plt.title(f'{title}')
     plt.show()
 
-# def plot_line(func, x0, dir, step):
-#     x1, x2 = x0
-#     x1_end, x2_end = x0 +dir*step
-#     range_x1 = np.linspace(x1, x1+step, 1000)
-#     range_x2 = np.linspace(x1, x1+step, 1000)
 
 # all the funcs must provide gradient!
 
@@ -57,52 +52,10 @@ def pen_ext_quad_5_4(x, ug):
 
 
 def pen_int_5_4(x, ug):
-    # fx = x[0] + 2*x[1]
-    # d_fx = np.array([1, 2])
-    # hel = -1/4*x[0]**2 - x[1]**2 + 1
-    # gfx = - ug*np.log(hel)
-    # d_gfx = np.zeros(2)
-    # d_gfx[0] = -2*ug*x[0]/(x[0]**2 + 4*x[1]**2 - 4)
-    # d_gfx[1] = -8*ug*x[1]/(x[0]**2 + 4*x[1]**2 - 4)
-    # return fx+gfx, d_fx+d_gfx
-    return x[0] + 2 * x[1] - 3*np.log(-1/4*x[0]**2 - x[1]**2 + 1), [
+    return x[0] + 2 * x[1] - ug*np.log(-1/4*x[0]**2 - x[1]**2 + 1), [
         1 - (2*ug*x[0] / (x[0]**2 + 4*x[1]**2 - 4)),
         2 - (8*ug*x[1] / (x[0]**2 + 4*x[1]**2 - 4))
     ]
-
-
-def func(x):
-    ug = 1
-    # fx = x[0] + 2*x[1]
-    # d_fx = np.array([1, 2])
-    # hel = -1/4*x[0]**2 - x[1]**2 + 1
-    # gfx = - ug*np.log(hel)
-    # d_gfx = np.zeros(2)
-    # d_gfx[0] = -2*ug*x[0]/(x[0]**2 + 4*x[1]**2 - 4)
-    # d_gfx[1] = -8*ug*x[1]/(x[0]**2 + 4*x[1]**2 - 4)
-    # return fx+gfx
-    hel = -1/4*x[0]**2 - x[1]**2 + 1
-    hel2 = []
-    for h in hel:
-        h = [ug*np.log(i) if i > 0 else 0 for i in h]
-        hel2.append(h)
-    return x[0] + 2 * x[1] - hel2
-
-
-def grad(x):
-    ug = 3
-    fx = x[0] + 2*x[1]
-    d_fx = np.array([1, 2])
-    hel = -1/4*x[0]**2 - x[1]**2 + 1
-    gfx = - ug*np.log(hel)
-    d_gfx = np.zeros(2)
-    d_gfx[0] = -2*ug*x[0]/(x[0]**2 + 4*x[1]**2 - 4)
-    d_gfx[1] = -8*ug*x[1]/(x[0]**2 + 4*x[1]**2 - 4)
-    return d_fx+d_gfx
-    # return [
-    #     1 - (2*ug*x[0] / (x[0]**2 + 4*x[1]**2 - 4)),
-    #     2 - (8*ug*x[1] / (x[0]**2 + 4*x[1]**2 - 4))
-    # ]
 
 
 class Penalizer:
@@ -118,7 +71,7 @@ class Penalizer:
             return pen_int_5_4(x, self.ug)
 
 
-def con_optimizer(x0, epsilon_g, options=None):
+def con_optimizer(x0, epsilon_g, options=None, opt_options=None):
     if options is None:
         options = {}
 
@@ -135,13 +88,6 @@ def con_optimizer(x0, epsilon_g, options=None):
     guess = x0
     guess_prev = guess
 
-    # f, df = func(guess)
-    # df_infnorm = np.linalg.norm(df, np.inf)
-    # for direction
-    # df_prev = df
-    # dir_prev = dir_steepdesc(df)
-    # inv_hess = 1/np.linalg.norm(df) * np.identity(len(x0))
-
     uh = options['uh']
     ug = options['ug']
 
@@ -149,19 +95,22 @@ def con_optimizer(x0, epsilon_g, options=None):
     constr_dist = abs(constraint_5_4(guess))
     constr_dists = [constr_dist]
     guesses = [guess]
-    opt_options = {
-        'step_init': 0.5
-    }
+    if opt_options is None:
+        opt_options = {}
+        opt_options = {
+            'step_init': 0.5,
+            'constraint': constraint_5_4
+        }
+
     while constr_dist > epsilon_g:
         func_pen = Penalizer(uh, ug, options["pen"])
         # print(
-        #     f"\nCONSTR OPT with u:{ug}, guess: {guess}, f: {func_pen(guess)}")
+        #     f"Constrained Optimizer loop {it} with u:{ug}, guess: {guess}, f: {func_pen(guess)}, constraint dist: {constr_dist}")
         guess, f, output = uncon_optimizer(
-            func_pen, guess_prev, epsilon_g, opt_options, constraint_5_4)
+            func_pen, guess_prev, epsilon_g, opt_options)
         guesses.append(guess)
         constr_dist = abs(constraint_5_4(guess))
         constr_dists.append(constr_dist)
-        # print(ug, guess, constr_dist)
         uh = options["p"]*uh
         ug = options["p"]*ug
         guess_prev = guess
@@ -178,20 +127,25 @@ if __name__ == "__main__":
         'p': 1.8,
         'pen': 'ext'
     }
-    print(con_optimizer(x0, epsilon_g, options))
+    opt_options = {
+        'step_init': 1,
+    }
+    print(con_optimizer(x0, epsilon_g, options, opt_options))
 
-    x0 = np.array([-0.56155282, - 0.28077635])
+    x0 = np.array([-1, 0])
     epsilon_g = 1e-5
     options = {
         'uh': 1,
-        'ug': 1,
-        'p': 0.3,
+        'ug': 3,
+        'p': 0.5,
         'pen': 'int'
     }
-    # func_pen = Penalizer(1, options["ug"], options["pen"])
-    # res = minimize(func_pen, x0, jac=True)
-    # print(res)
-    # print(con_optimizer(x0, epsilon_g, options))
+    opt_options = {
+        'step_init': 1,
+        'linsearch': 'backtrack',
+        'constraint': constraint_5_4
+    }
+    print(con_optimizer(x0, epsilon_g, options, opt_options))
     # plot_constrained_opt(func, constraint_5_4, x0,
     #                      "Contour plot of the cross-sectional area with stress constraints")
 

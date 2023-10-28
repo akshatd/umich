@@ -9,7 +9,7 @@ The autograder will import `uncon_optimizer` from this file. If you change the f
 import numpy as np
 
 
-def uncon_optimizer(func, x0, epsilon_g, options=None, constr=None):
+def uncon_optimizer(func, x0, epsilon_g, options=None):
     """An algorithm for unconstrained optimization.
 
     Parameters
@@ -71,6 +71,10 @@ def uncon_optimizer(func, x0, epsilon_g, options=None, constr=None):
     if "stepinc" not in options:
         options["stepinc"] = 2
 
+    constraint = None
+    if 'constraint' in options:
+        constraint = options['constraint']
+
     # TODO: Your code goes here!
     it = 0
     guess = x0
@@ -96,9 +100,12 @@ def uncon_optimizer(func, x0, epsilon_g, options=None, constr=None):
 
         phi_0 = f
         dphi_0 = np.dot(df, dir)
-        step_init = step*(np.dot(df_prev, dir_prev))/(np.dot(df, dir))
+        if options["linsearch"] == 'bracket':
+            step_init = step*(np.dot(df_prev, dir_prev))/(np.dot(df, dir))
+        else:
+            step_init = options["step_init"]
         step, f, new_df = get_step(options["linsearch"], func, guess, dir, phi_0, dphi_0, step_init,
-                                   options["suffdec"], options["bktrk"], options["suffcur"], options["stepinc"], constr)
+                                   options["suffdec"], options["bktrk"], options["suffcur"], options["stepinc"], constraint)
 
         guess_prev = guess
         guess = guess + step * dir
@@ -165,18 +172,22 @@ def dir_bfgs(df, df_prev, it, dir_prev, x, x_prev, inv_hess_prev):
 
 def get_step(lin_option, func, x, dir, phi_0, dphi_0, step_init, suffdec, bktrk, suffcur, stepinc, constr):
     if lin_option == "backtrack":
-        return linsearch_bktrk(func, x, dir, phi_0, dphi_0, step_init, suffdec, bktrk)
+        return linsearch_bktrk(func, x, dir, phi_0, dphi_0, step_init, suffdec, bktrk, constr)
     elif lin_option == "bracket":
         return linsearch_bracket(func, x, dir, phi_0, dphi_0, step_init, suffdec, suffcur, stepinc)
     else:
         return linsearch_bracket(func, x, dir, phi_0, dphi_0, step_init, suffdec, suffcur, stepinc)
 
 
-def linsearch_bktrk(func, guess, dir, phi_0, dphi_0, step_init, suffdec, bktrk):
+def linsearch_bktrk(func, guess, dir, phi_0, dphi_0, step_init, suffdec, bktrk, constr):
     # backtracking line search
     step = step_init
+    if constr is not None:
+        while constr(guess + dir*step) > 0:
+            step = bktrk * step
+
     phi_step, _, df_step = xphi(func, guess, dir, step)
-    # print(f"** backtrack ** step: {step}, fx: {phi_step}")
+    # print(f"** backtrack ** step: {step}, phi_step: {phi_step}")
     while phi_step > (phi_0 + suffdec * step * dphi_0):
         step = bktrk * step
         phi_step, _, df_step = xphi(func, guess, dir, step)
