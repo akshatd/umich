@@ -3,7 +3,7 @@ import numpy as np
 from scipy.optimize import check_grad, minimize
 
 from uncon_optimizer import uncon_optimizer
-import prob4_2 as prob
+import prob4_2 as can
 
 
 def plot_constrained_opt(fx, constr1, opt, title):
@@ -58,20 +58,42 @@ def pen_int_5_4(x, ug):
     ]
 
 
+def constraint_can(x):
+    # con1 = can.constraint1(x)/can.sigma_yield
+    # con2 = can.constraint2(x)
+    return can.constraint1(x)/can.sigma_yield + can.constraint2(x)/can.tau_yeild
+
+
+def pen_ext_quad_can(x, ug):
+    fx = can.func(x)
+    d_fx = np.array([2*can.b, can.h])
+    gfx = ug/2*max(0, can.constraint1(x))**2 + \
+        ug/2*max(0, can.constraint2(x))**2
+    d_gfx = np.zeros(2)
+    d_gfx[0] = - 1152*can.h*can.l*can.P*ug*(16*x[0]**2 + 1)*(384*can.h*can.l*can.P-can.sigma_yield*(
+        3*x[0] + 16*x[0]**3 + x[1]))/(3*x[0] + 16*x[0]**3 + x[1])**3
+    d_gfx[1] = - 384*can.P*can.l*can.h/(3*x[0] + 16*x[0]**3 + x[1])**3
+    d_gfx[0] += 0
+    d_gfx[1] += 1.5*can.P*ug * \
+        (can.h*can.tau_yeild*x[1] - 1.5*can.P)/(can.h**2*x[1]**3)
+    return fx+gfx, d_fx+d_gfx
+
+
+def pen_int_cant(x, ug):
+    return
+
+
 class Penalizer:
-    def __init__(self, uh, ug, type):
+    def __init__(self, uh, ug, func):
         self.uh = uh
         self.ug = ug
-        self.type = type
+        self.func = func
 
     def __call__(self, x):
-        if self.type == "ext":
-            return pen_ext_quad_5_4(x, self.ug)
-        else:
-            return pen_int_5_4(x, self.ug)
+        return self.func(x, self.ug)
 
 
-def con_optimizer(x0, epsilon_g, options=None, opt_options=None):
+def con_optimizer(func, x0, epsilon_g, options=None, opt_options=None):
     if options is None:
         options = {}
 
@@ -92,24 +114,24 @@ def con_optimizer(x0, epsilon_g, options=None, opt_options=None):
     ug = options['ug']
 
     # lists to keep track of function values
-    constr_dist = abs(constraint_5_4(guess))
-    constr_dists = [constr_dist]
     guesses = [guess]
     if opt_options is None:
         opt_options = {}
         opt_options = {
             'step_init': 0.5,
-            'constraint': constraint_5_4
         }
+    constraints = opt_options['constraint']
+    constr_dist = abs(constraints(guess))
+    constr_dists = [constr_dist]
 
     while constr_dist > epsilon_g:
-        func_pen = Penalizer(uh, ug, options["pen"])
+        func_pen = Penalizer(uh, ug, func)
         # print(
         #     f"Constrained Optimizer loop {it} with u:{ug}, guess: {guess}, f: {func_pen(guess)}, constraint dist: {constr_dist}")
         guess, f, output = uncon_optimizer(
             func_pen, guess_prev, epsilon_g, opt_options)
         guesses.append(guess)
-        constr_dist = abs(constraint_5_4(guess))
+        constr_dist = abs(constraints(guess))
         constr_dists.append(constr_dist)
         uh = options["p"]*uh
         ug = options["p"]*ug
@@ -119,33 +141,48 @@ def con_optimizer(x0, epsilon_g, options=None, opt_options=None):
 
 
 if __name__ == "__main__":
+    # pen_ext_quad_can(0.014)
+    print("- Exaple 5.4:")
     x0 = np.array([-2, -1])
+    # x0 = np.array([-2, -2])
+    # x0 = np.array([2, 1])
+    # x0 = np.array([2, 2])
     epsilon_g = 1e-5
     options = {
         'uh': 1,
         'ug': 0.5,
         'p': 1.8,
-        'pen': 'ext'
     }
     opt_options = {
         'step_init': 1,
+        'constraint': constraint_5_4
     }
-    print(con_optimizer(x0, epsilon_g, options, opt_options))
+    print(
+        f"Exterior penalty 5.4: {(con_optimizer(pen_ext_quad_5_4, x0, epsilon_g, options, opt_options))}")
+    x0 = np.array([0.013, 0.004])
+    options['p'] = 1.1
+    opt_options['constraint'] = constraint_can
+    opt_options['step_init'] = 0.1
+    # print(
+    #     f"Exterior penalty cantilever: {(con_optimizer(pen_ext_quad_can, x0, epsilon_g, options, opt_options))}")
 
     x0 = np.array([-1, 0])
-    epsilon_g = 1e-5
+    # x0 = np.array([0, 0.5])
+    # x0 = np.array([-1, -0.5])
+    # x0 = np.array([0, 0])
+    epsilon_g = 1e-6
     options = {
         'uh': 1,
         'ug': 3,
         'p': 0.5,
-        'pen': 'int'
     }
     opt_options = {
         'step_init': 1,
         'linsearch': 'backtrack',
         'constraint': constraint_5_4
     }
-    print(con_optimizer(x0, epsilon_g, options, opt_options))
+    print(
+        f"Interior penalty: {con_optimizer(pen_int_5_4, x0, epsilon_g, options, opt_options)}")
     # plot_constrained_opt(func, constraint_5_4, x0,
     #                      "Contour plot of the cross-sectional area with stress constraints")
 
