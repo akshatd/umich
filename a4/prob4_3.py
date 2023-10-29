@@ -3,7 +3,6 @@ import numpy as np
 from scipy.optimize import check_grad, minimize
 
 from uncon_optimizer import uncon_optimizer
-import prob4_2 as can
 
 
 def plot_constrained_opt(fx, constr1, opt, title):
@@ -58,29 +57,48 @@ def pen_int_5_4(x, ug):
     ]
 
 
+h = .25
+b = .125
+sigma_yield = 200000000
+tau_yeild = 116000000
+P = 100000
+l = 1
+
+
+def I(x):
+    return (3*x[0] + 16*x[0]**3 + x[1])/768
+
+
+def can_constraint1(x):
+    return P*l*h/(2*I(x))/sigma_yield - 1
+
+
+def can_constraint2(x):
+    return 1.5*P/(h*x[1])/tau_yeild - 1
+
+
 def constraint_can(x):
-    # con1 = can.constraint1(x)/can.sigma_yield
-    # con2 = can.constraint2(x)
-    return can.constraint1(x)/can.sigma_yield + can.constraint2(x)/can.tau_yeild
+    return can_constraint1(x) + can_constraint2(x)
 
 
-def pen_ext_quad_can(x, ug):
-    fx = can.func(x)
-    d_fx = np.array([2*can.b, can.h])
-    gfx = ug/2*max(0, can.constraint1(x))**2 + \
-        ug/2*max(0, can.constraint2(x))**2
-    d_gfx = np.zeros(2)
-    d_gfx[0] = - 1152*can.h*can.l*can.P*ug*(16*x[0]**2 + 1)*(384*can.h*can.l*can.P-can.sigma_yield*(
-        3*x[0] + 16*x[0]**3 + x[1]))/(3*x[0] + 16*x[0]**3 + x[1])**3
-    d_gfx[1] = - 384*can.P*can.l*can.h/(3*x[0] + 16*x[0]**3 + x[1])**3
-    d_gfx[0] += 0
-    d_gfx[1] += 1.5*can.P*ug * \
-        (can.h*can.tau_yeild*x[1] - 1.5*can.P)/(can.h**2*x[1]**3)
-    return fx+gfx, d_fx+d_gfx
+# def pen_ext_quad_can(x, ug):
+    # fx = 2*b*x[0] + h*x[1]
+    # d_fx = np.array([2*b, h])
+    # gfx = ug/2*max(0, can_constraint1(x))**2 + \
+    #     ug/2*max(0, can_constraint2(x))**2
+    # d_gfx = np.zeros(2)
+    # d_gfx[0] = - 1152*can.h*can.l*can.P*ug*(16*x[0]**2 + 1)*(384*can.h*can.l*can.P-can.sigma_yield*(
+    #     3*x[0] + 16*x[0]**3 + x[1]))/(3*x[0] + 16*x[0]**3 + x[1])**3
+    # d_gfx[1] = - 384*can.P*can.l*can.h/(3*x[0] + 16*x[0]**3 + x[1])**3
+    # d_gfx[0] += 0
+    # d_gfx[1] += 1.5*can.P*ug * \
+    #     (can.h*can.tau_yeild*x[1] - 1.5*can.P)/(can.h**2*x[1]**3)
+    # return fx+gfx, d_fx+d_gfx
+    # return 0, 0
 
 
-def pen_int_cant(x, ug):
-    return
+# def pen_int_cant(x, ug):
+#     return
 
 
 class Penalizer:
@@ -181,8 +199,9 @@ if __name__ == "__main__":
         'linsearch': 'backtrack',
         'constraint': constraint_5_4
     }
-    print(
-        f"Interior penalty: {con_optimizer(pen_int_5_4, x0, epsilon_g, options, opt_options)}")
+    # print(
+    #     f"Interior penalty: {con_optimizer(pen_int_5_4, x0, epsilon_g, options, opt_options)}")
+
     # plot_constrained_opt(func, constraint_5_4, x0,
     #                      "Contour plot of the cross-sectional area with stress constraints")
 
