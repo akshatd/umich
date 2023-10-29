@@ -1,11 +1,51 @@
 import numpy as np
+import matplotlib.pyplot as plt
+
+
+def plot_constrained_opt(fx, constr1, guesses, title):
+    plot_spread = 3
+    # def plot_constrained_opt(fx, opt, title):
+    x1, x2 = guesses[-1]
+    range_x1 = np.linspace(x1-plot_spread, x1+plot_spread, 1000)
+    range_x2 = np.linspace(x2-plot_spread, x2+plot_spread, 1000)
+    mesh_x1, mesh_x2 = np.meshgrid(range_x1, range_x2)
+    data = fx([mesh_x1, mesh_x2])
+    data_constr1 = constr1([mesh_x1, mesh_x2])
+    _, ax = plt.subplots()
+    levels = np.linspace(np.min(data), np.max(data), 30)
+    ax.contour(mesh_x1, mesh_x2, data, levels=levels)
+    # ax.contour(mesh_x1, mesh_x2, data)
+    # ax.contourf(
+    #     mesh_x1, mesh_x2, data_constr1, levels=[0, 22263044], colors='r')
+    ax.contour(mesh_x1, mesh_x2, data_constr1, levels=[0], colors='k')
+
+    x, y = np.array(guesses).T
+    ax.plot(x, y, '-o')
+    ax.annotate("optimum", xy=(x1, x2))
+    ax.set_xlabel("x1")
+    ax.set_ylabel("x2")
+    plt.title(f'{title}')
+    plt.show()
+
+
+def pf_5_4(x):
+    return x[0] + 2*x[1]
+
+# plotting
+
+
+def ph_5_4(x):
+    h1 = 1/4*x[0]**2 + x[1]**2 - 1
+
+    return h1
 
 
 def f_5_4(x):
     return float(x[0] + 2*x[1]), np.array([1, 2])
 
-
 # equality constraints
+
+
 def h_5_4(x):
     h1 = 1/4*x[0]**2 + x[1]**2 - 1
     dx_h1 = np.array([1/2*x[0], 2*x[1]])
@@ -31,7 +71,7 @@ def QNSQP(x0, tol_opt, tol_feas, func, func_h, uh):
     guesses = [x_k]
     print(f"SQP start, lambda:{lambdas} guess:{x_k}")
 
-    while infnorm_lagr > tol_opt or infnorm_h > tol_feas and k < 1000:
+    while (infnorm_lagr > tol_opt or infnorm_h > tol_feas) and k < 3:
         if k == 0 or np.dot(dx_f, dx_f_prev) > 10:
             # hess_lagr = 1/np.linalg.norm(dx_f) * np.identity(len(dx_f_prev))
             hess_lagr = np.identity(nx)
@@ -120,4 +160,7 @@ if __name__ == "__main__":
     tol_feas = 1e-3
     uh = 1
     # print(f"fx0 = {f_5_2(x0)}, hx0 = {h_5_2(x0)}")
-    QNSQP(x0, tol_opt, tol_feas, f_5_4, h_5_4, uh)
+    guesses = QNSQP(x0, tol_opt, tol_feas, f_5_4, h_5_4, uh)
+
+    plot_constrained_opt(pf_5_4, ph_5_4, guesses,
+                         "Ex 4.5 contour with constraints and optimization path")

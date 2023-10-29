@@ -199,8 +199,8 @@ if __name__ == "__main__":
         'linsearch': 'backtrack',
         'constraint': constraint_5_4
     }
-    # print(
-    #     f"Interior penalty: {con_optimizer(pen_int_5_4, x0, epsilon_g, options, opt_options)}")
+    print(
+        f"Interior penalty: {con_optimizer(pen_int_5_4, x0, epsilon_g, options, opt_options)}")
 
     # plot_constrained_opt(func, constraint_5_4, x0,
     #                      "Contour plot of the cross-sectional area with stress constraints")

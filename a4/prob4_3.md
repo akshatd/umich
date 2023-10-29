@@ -28,7 +28,7 @@ Interior:
 
 Solutions:
 
-- Exterior:
-- Interior:
+- Exterior: ~0.014 (14cm)
+- Interior: ~0.005 (5cm)
 
 Solutions are the same as the analytical solutions
