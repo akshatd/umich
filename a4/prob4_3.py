@@ -1,8 +1,11 @@
+#!/usr/bin/env python
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import check_grad, minimize
 
 from uncon_optimizer import uncon_optimizer
+import functions as fn
 
 
 def plot_constrained_opt(fx, constr1, opt, title):
@@ -32,21 +35,14 @@ def plot_constrained_opt(fx, constr1, opt, title):
 
 # all the funcs must provide gradient!
 
-
-def constraint_5_4(x):
-    return 1/4*x[0]**2 + x[1]**2 - 1
-
 # uh = equality penalty parameter
 # ug = inequality penalty parameter
 
-
-def pen_ext_quad_5_4(x, ug):
-    fx = x[0] + 2*x[1]
-    d_fx = np.array([1, 2])
-    gfx = ug/2*max(0, 1/4*x[0]**2 + x[1]**2 - 1)**2
-    d_gfx = np.zeros(2)
-    d_gfx[0] = 1/8*ug*x[0]*(x[0]**2 + 4*x[1]**2 - 4)
-    d_gfx[1] = 1/2*ug*x[1]*(x[0]**2 + 4*x[1]**2 - 4)
+def pen_ext_quad(x, ug, f, df, g, dg):
+    fx = fn.e5_4_f(x)
+    gfx = ug/2 * max(0, fn.e5_4_g(x))**2
+    d_fx = fn.e5_4_df(x)
+    d_gfx = ug * fn.e5_4_g(x) * fn.e5_4_dg(x)
     return fx+gfx, d_fx+d_gfx
 
 
@@ -111,7 +107,24 @@ class Penalizer:
         return self.func(x, self.ug)
 
 
-def con_optimizer(func, x0, epsilon_g, options=None, opt_options=None):
+class ConstrainedProblem:
+    def __init__(self, f, df, h=None, dh=None, g=None, dg=None) -> None:
+        self.f = f
+        self.df = df
+        self.h = h
+        self.dh = dh
+        self.g = g
+        self.dg = dg
+
+
+def penalized(pen_type, x, ug, problem: ConstrainedProblem):
+    if pen_type == 'int':
+        return
+    elif pen_type == 'ext':
+        return lambda x: pen_ext_quad(x, ug, problem.f, problem.df, problem.g, problem.dg)
+
+
+def con_optimizer(problem: ConstrainedProblem, x0, epsilon_g, options=None, opt_options=None):
     if options is None:
         options = {}
 
@@ -138,12 +151,15 @@ def con_optimizer(func, x0, epsilon_g, options=None, opt_options=None):
         opt_options = {
             'step_init': 0.5,
         }
-    constraints = opt_options['constraint']
+    constraints = problem.g
     constr_dist = abs(constraints(guess))
     constr_dists = [constr_dist]
 
     while constr_dist > epsilon_g:
-        func_pen = Penalizer(uh, ug, func)
+        if options['pen'] == 'ext':
+            func_pen = penalized(options['pen'], guess, ug, problem)
+        elif options['pen'] == 'int':
+            func_pen = Penalizer(uh, ug, pen_int_5_4)
         # print(
         #     f"Constrained Optimizer loop {it} with u:{ug}, guess: {guess}, f: {func_pen(guess)}, constraint dist: {constr_dist}")
         guess, f, output = uncon_optimizer(
@@ -165,18 +181,22 @@ if __name__ == "__main__":
     # x0 = np.array([-2, -2])
     # x0 = np.array([2, 1])
     # x0 = np.array([2, 2])
+    e5_4 = ConstrainedProblem(fn.e5_4_f, fn.e5_4_df,
+                              g=fn.e5_4_g, dg=fn.e5_4_dg)
     epsilon_g = 1e-5
     options = {
+        'pen': 'ext',
         'uh': 1,
         'ug': 0.5,
         'p': 1.8,
     }
     opt_options = {
         'step_init': 1,
-        'constraint': constraint_5_4
+        'constraint': fn.e5_4_g
     }
+
     print(
-        f"Exterior penalty 5.4: {(con_optimizer(pen_ext_quad_5_4, x0, epsilon_g, options, opt_options))}")
+        f"Exterior penalty: {(con_optimizer(e5_4, x0, epsilon_g, options, opt_options))}")
     x0 = np.array([0.013, 0.004])
     options['p'] = 1.1
     opt_options['constraint'] = constraint_can
@@ -190,6 +210,7 @@ if __name__ == "__main__":
     # x0 = np.array([0, 0])
     epsilon_g = 1e-6
     options = {
+        'pen': 'int',
         'uh': 1,
         'ug': 3,
         'p': 0.5,
@@ -197,10 +218,10 @@ if __name__ == "__main__":
     opt_options = {
         'step_init': 1,
         'linsearch': 'backtrack',
-        'constraint': constraint_5_4
+        'constraint': fn.e5_4_g
     }
     print(
-        f"Interior penalty: {con_optimizer(pen_int_5_4, x0, epsilon_g, options, opt_options)}")
+        f"Interior penalty: {con_optimizer(e5_4, x0, epsilon_g, options, opt_options)}")
 
     # plot_constrained_opt(func, constraint_5_4, x0,
     #                      "Contour plot of the cross-sectional area with stress constraints")

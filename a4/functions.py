@@ -64,6 +64,21 @@ def p42_dL(vars):
 
 # prob 4.3
 
+def e5_4_f(x):
+    return x[0] + 2*x[1]
+
+
+def e5_4_df(x):
+    return np.array([1, 2])
+
+
+def e5_4_g(x):
+    return 1/4*x[0]**2 + x[1]**2 - 1
+
+
+def e5_4_dg(x):
+    return np.array([1/2*x[0], 2*x[1]])
+
 
 if __name__ == "__main__":
     # Initial guesses for variables
