@@ -39,18 +39,19 @@ def plot_constrained_opt(fx, constr1, opt, title):
 # ug = inequality penalty parameter
 
 def pen_ext_quad(x, ug, f, df, g, dg):
-    fx = fn.e5_4_f(x)
-    gfx = ug/2 * max(0, fn.e5_4_g(x))**2
-    d_fx = fn.e5_4_df(x)
-    d_gfx = ug * fn.e5_4_g(x) * fn.e5_4_dg(x)
-    return fx+gfx, d_fx+d_gfx
+    fx = f(x)
+    gx = ug/2 * max(0, g(x))**2
+    dfx = df(x)
+    dgx = ug * g(x) * dg(x)
+    return fx+gx, dfx+dgx
 
 
-def pen_int_5_4(x, ug):
-    return x[0] + 2 * x[1] - ug*np.log(-1/4*x[0]**2 - x[1]**2 + 1), [
-        1 - (2*ug*x[0] / (x[0]**2 + 4*x[1]**2 - 4)),
-        2 - (8*ug*x[1] / (x[0]**2 + 4*x[1]**2 - 4))
-    ]
+def pen_int(x, ug, f, df, g, dg):
+    fx = f(x)
+    gx = ug*np.log(-g(x))
+    dfx = df(x)
+    dgx = ug*dg(x)/g(x)
+    return fx-gx, dfx-dgx
 
 
 h = .25
@@ -97,16 +98,6 @@ def constraint_can(x):
 #     return
 
 
-class Penalizer:
-    def __init__(self, uh, ug, func):
-        self.uh = uh
-        self.ug = ug
-        self.func = func
-
-    def __call__(self, x):
-        return self.func(x, self.ug)
-
-
 class ConstrainedProblem:
     def __init__(self, f, df, h=None, dh=None, g=None, dg=None) -> None:
         self.f = f
@@ -119,7 +110,7 @@ class ConstrainedProblem:
 
 def penalized(pen_type, x, ug, problem: ConstrainedProblem):
     if pen_type == 'int':
-        return
+        return lambda x: pen_int(x, ug, problem.f, problem.df, problem.g, problem.dg)
     elif pen_type == 'ext':
         return lambda x: pen_ext_quad(x, ug, problem.f, problem.df, problem.g, problem.dg)
 
@@ -156,10 +147,7 @@ def con_optimizer(problem: ConstrainedProblem, x0, epsilon_g, options=None, opt_
     constr_dists = [constr_dist]
 
     while constr_dist > epsilon_g:
-        if options['pen'] == 'ext':
-            func_pen = penalized(options['pen'], guess, ug, problem)
-        elif options['pen'] == 'int':
-            func_pen = Penalizer(uh, ug, pen_int_5_4)
+        func_pen = penalized(options['pen'], guess, ug, problem)
         # print(
         #     f"Constrained Optimizer loop {it} with u:{ug}, guess: {guess}, f: {func_pen(guess)}, constraint dist: {constr_dist}")
         guess, f, output = uncon_optimizer(
