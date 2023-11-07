@@ -150,7 +150,7 @@ def con_optimizer(problem: ConstrainedProblem, x0, epsilon_g, options=None, opt_
             'step_init': 0.5,
         }
     constraints = problem.g
-    constr_dist = abs(constraints(guess))
+    constr_dist = np.sum(np.abs(constraints(guess)))
     constr_dists = [constr_dist]
 
     while constr_dist > epsilon_g:
@@ -160,7 +160,7 @@ def con_optimizer(problem: ConstrainedProblem, x0, epsilon_g, options=None, opt_
         guess, f, output = uncon_optimizer(
             func_pen, guess_prev, epsilon_g, opt_options)
         guesses.append(guess)
-        constr_dist = abs(constraints(guess))
+        constr_dist = np.sum(np.abs(constraints(guess)))
         constr_dists.append(constr_dist)
         uh = options["p"]*uh
         ug = options["p"]*ug
@@ -170,7 +170,6 @@ def con_optimizer(problem: ConstrainedProblem, x0, epsilon_g, options=None, opt_
 
 
 if __name__ == "__main__":
-    # pen_ext_quad_can(0.014)
     print("- Exaple 5.4:")
     x0 = np.array([-2, -1])
     # x0 = np.array([-2, -2])
@@ -215,12 +214,23 @@ if __name__ == "__main__":
     # plot_constrained_opt(func, constraint_5_4, x0,
     #                      "Contour plot of the cross-sectional area with stress constraints")
 
+    print("- Cantelever problem from 4.2")
+    p4_2 = ConstrainedProblem(fn.p42_f, fn.p42_df, g=fn.p42_g, dg=fn.p42_dg)
     x0 = np.array([0.013, 0.004])
-    options['p'] = 1.1
-    opt_options['constraint'] = constraint_can
-    opt_options['step_init'] = 0.1
-    # print(
-    #     f"Exterior penalty cantilever: {(con_optimizer(pen_ext_quad_can, x0, epsilon_g, options, opt_options))}")
+    epsilon_g = 1e-5
+    options = {
+        'pen': 'ext',
+        'uh': 1,
+        'ug': 0.5,
+        'p': 1.1,
+    }
+    opt_options = {
+        'step_init': 1,
+        'constraint': fn.p42_g
+    }
+
+    print(
+        f"Exterior penalty cantilever: {(con_optimizer(p4_2, x0, epsilon_g, options, opt_options))}")
 
     # print(check_grad(func, grad, [0, 0]))
     # print(check_grad(func, grad, [-0.5, 0.5]))

@@ -71,13 +71,28 @@ def e5_4_f(x):
 def e5_4_df(x):
     return np.array([1, 2])
 
+# returns np array of gx's [gx1, gx2, gx3, etc]
+
 
 def e5_4_g(x):
-    return 1/4*x[0]**2 + x[1]**2 - 1
+    return np.array([1/4*x[0]**2 + x[1]**2 - 1])
+
+# returns a jacobian, with each row corresponding to a constraint
+# each column corresponds to the partial differential wrt to x0, x1, etc
 
 
 def e5_4_dg(x):
-    return np.array([1/2*x[0], 2*x[1]])
+    return np.array([[1/2*x[0], 2*x[1]]])
+
+# redone funcs for problem 4.2
+
+
+def p42_g(x):
+    return np.array([p42_g1(x), p42_g2(x)])
+
+
+def p42_dg(x):
+    return np.array([p42_dg1(x), p42_dg2(x)])
 
 
 if __name__ == "__main__":
