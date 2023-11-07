@@ -40,10 +40,17 @@ def plot_constrained_opt(fx, constr1, opt, title):
 
 def pen_ext_quad(x, ug, f, df, g, dg):
     fx = f(x)
-    gx = ug/2 * max(0, g(x))**2
+    gx = g(x)
+    gx = np.where(gx > 0, gx, 0)
+    gx_pen = ug/2 * np.sum(gx**2)
+
     dfx = df(x)
-    dgx = ug * g(x) * dg(x)
-    return fx+gx, dfx+dgx
+    dgx = dg(x)
+    # :, None to broadcast so that we can multiply element wise
+    # axis=0 so all the x1s and x2s are added together
+    dgx_pen = ug * np.sum(gx[:, None] * dgx, axis=0)
+
+    return fx+gx_pen, dfx+dgx_pen
 
 
 def pen_int(x, ug, f, df, g, dg):
@@ -185,6 +192,7 @@ if __name__ == "__main__":
 
     print(
         f"Exterior penalty: {(con_optimizer(e5_4, x0, epsilon_g, options, opt_options))}")
+
     x0 = np.array([0.013, 0.004])
     options['p'] = 1.1
     opt_options['constraint'] = constraint_can
@@ -208,8 +216,8 @@ if __name__ == "__main__":
         'linsearch': 'backtrack',
         'constraint': fn.e5_4_g
     }
-    print(
-        f"Interior penalty: {con_optimizer(e5_4, x0, epsilon_g, options, opt_options)}")
+    # print(
+    #     f"Interior penalty: {con_optimizer(e5_4, x0, epsilon_g, options, opt_options)}")
 
     # plot_constrained_opt(func, constraint_5_4, x0,
     #                      "Contour plot of the cross-sectional area with stress constraints")
