@@ -45,20 +45,20 @@ def pen_ext_quad(x, ug, f, df, g, dg):
     gx_pen = ug/2 * np.sum(gx**2)
 
     dfx = df(x)
-    dgx = dg(x)
     # :, None to broadcast so that we can multiply element wise
     # axis=0 so all the x1s and x2s are added together
-    dgx_pen = ug * np.sum(gx[:, None] * dgx, axis=0)
+    dgx_pen = ug * np.sum(gx[:, None] * dg(x), axis=0)
 
     return fx+gx_pen, dfx+dgx_pen
 
 
 def pen_int(x, ug, f, df, g, dg):
     fx = f(x)
-    gx = ug*np.log(-g(x))
+    gx = g(x)
+    gx_pen = ug * np.sum(np.log(-gx))
     dfx = df(x)
-    dgx = ug*dg(x)/g(x)
-    return fx-gx, dfx-dgx
+    dgx_pen = ug * np.sum(dg(x)/gx[:, None], axis=0)
+    return fx-gx_pen, dfx-dgx_pen
 
 
 h = .25
@@ -193,13 +193,6 @@ if __name__ == "__main__":
     print(
         f"Exterior penalty: {(con_optimizer(e5_4, x0, epsilon_g, options, opt_options))}")
 
-    x0 = np.array([0.013, 0.004])
-    options['p'] = 1.1
-    opt_options['constraint'] = constraint_can
-    opt_options['step_init'] = 0.1
-    # print(
-    #     f"Exterior penalty cantilever: {(con_optimizer(pen_ext_quad_can, x0, epsilon_g, options, opt_options))}")
-
     x0 = np.array([-1, 0])
     # x0 = np.array([0, 0.5])
     # x0 = np.array([-1, -0.5])
@@ -216,11 +209,18 @@ if __name__ == "__main__":
         'linsearch': 'backtrack',
         'constraint': fn.e5_4_g
     }
-    # print(
-    #     f"Interior penalty: {con_optimizer(e5_4, x0, epsilon_g, options, opt_options)}")
+    print(
+        f"Interior penalty: {con_optimizer(e5_4, x0, epsilon_g, options, opt_options)}")
 
     # plot_constrained_opt(func, constraint_5_4, x0,
     #                      "Contour plot of the cross-sectional area with stress constraints")
+
+    x0 = np.array([0.013, 0.004])
+    options['p'] = 1.1
+    opt_options['constraint'] = constraint_can
+    opt_options['step_init'] = 0.1
+    # print(
+    #     f"Exterior penalty cantilever: {(con_optimizer(pen_ext_quad_can, x0, epsilon_g, options, opt_options))}")
 
     # print(check_grad(func, grad, [0, 0]))
     # print(check_grad(func, grad, [-0.5, 0.5]))
