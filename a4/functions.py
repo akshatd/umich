@@ -85,14 +85,16 @@ def e5_4_dg(x):
     return np.array([[1/2*x[0], 2*x[1]]])
 
 # redone funcs for problem 4.2
+# these are scaled to prevent the values from becoming too small
 
 
 def p42_g(x):
-    return np.array([p42_g1(x), p42_g2(x)])
+    return np.array([P*l*h*p42_I_inv(x)/(2*sigma_yield) - 1,
+                     1.5*P/(h*x[1]*tau_yeild) - 1])
 
 
 def p42_dg(x):
-    return np.array([p42_dg1(x), p42_dg2(x)])
+    return np.array([p42_dg1(x)/sigma_yield, p42_dg2(x)/tau_yeild])
 
 
 if __name__ == "__main__":
