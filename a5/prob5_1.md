@@ -30,7 +30,11 @@
 - Is this estimate consistent with your plot?
   - Yes this estimate is consistent with the plot
 
-![Comparison Graph](5_1.svg "5.1 Graph")
+![Comparison Graph](5_1_1.svg "5.1 Graph")
+
+Plot with underflow:
+
+![Comparison Graph](5_1_2.svg "5.1 Graph")
 
 ## 5.1.b
 

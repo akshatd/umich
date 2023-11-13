@@ -20,8 +20,8 @@ def complex_step(f, x, h):
 if __name__ == "__main__":
     print("Problem 5.1.a")
 
-    steps = [10**-s for s in range(1, 25)]
-    # steps = [10**-s for s in range(1, 325)]
+    # steps = [10**-s for s in range(1, 25)]
+    steps = [10**-s for s in range(1, 325)]
     x = 1.5
     # fx_exact = 4.4977800539461619
     dfx_exact = 4.0534278938986201
@@ -53,7 +53,10 @@ if __name__ == "__main__":
         f"Optimal derivatives:\n- Forward difference: {finite_diff_fwd(fn.p51_f, x, step_fwd)}\n- Central difference: {finite_diff_ctr(fn.p51_f, x, step_ctr)}\n- Complex step: {complex_step(fn.p51_f, x, step_cplx)}")
 
     plots.plot_step_error(
-        err_findiff_fwd, err_findiff_ctr, err_cplx, steps, "Complex-step accuracy compared with ﬁnite differences")
+        err_findiff_fwd[:25], err_findiff_ctr[:25], err_cplx[:25], steps[:25], "Complex-step accuracy compared with ﬁnite differences")
+
+    plots.plot_step_error(
+        err_findiff_fwd, err_findiff_ctr, err_cplx, steps, "Complex-step accuracy compared with ﬁnite differences (till underflow)")
 
     print("\nProblem 5.1.b")
     x_add = fn.ADData(x)
