@@ -107,8 +107,11 @@ def truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid):
     mass = np.sum(rho * A * L)
 
     # stiffness and stress matrices
-    K = np.zeros((DOF * n, DOF * n), dtype='complex')
+    K = np.zeros((DOF * n, DOF * n))
     S = np.zeros((nbar, DOF * n))
+    if A.dtype == 'complex128':
+        K = np.zeros((DOF * n, DOF * n), dtype='complex')
+        S = np.zeros((nbar, DOF * n), dtype='complex')
 
     for i in range(nbar):  # loop through each bar
 
@@ -146,7 +149,7 @@ def truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid):
     # compute stress
     stress = np.dot(S, d).reshape(nbar)
 
-    return mass, stress, K, S
+    return mass, stress, K, np.squeeze(d), S
 
 
 def tenbartruss(A, grad_method='FD', aggregate=False):
@@ -236,37 +239,84 @@ def tenbartruss(A, grad_method='FD', aggregate=False):
 
     # --- call truss function ----
     # This will compute the mass and stress of your truss structure
-    mass, stress = truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid)
-    # TODO: You may want to return additional variables from `truss` function for the implicit analytic methods.
-    #       Feel free to modify `truss` function.
+    mass, stress, K, d, S = truss(
+        nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid)
 
     # --- compute derivatives for provided grad_type ----
-    # TODO: Implement derivatives for each method here
     num_bars = len(bars_node)
+    # df/dx total 10x10
     dmass_dA = np.zeros(num_bars)
+    # df/dx total 10x10
     dstress_dA = np.zeros((num_bars, num_bars))
+    # dr/dx partial 8x10
+    # starting as the transposed dims(10x8) for ease of programming, will transpose later
+    # dK_dA = np.zeros((num_bars, np.shape(K)[0]))
+    # phi for direct, 8x10
+    phi_dir = np.zeros((num_bars, np.shape(K)[0]))
+    # psi for adjoint, 10x8, dont need to be transposed cos we solve row by row
+    psi_adj = np.zeros((num_bars, np.shape(K)[0]))
     if grad_method == 'FD':
-        h_fd = np.max([math.ulp(s)**(1/2) for s in stress])
+        # h_fd = np.max([math.ulp(s)**(1/2) for s in stress])
+        h_fd = 1e-8
         for bar in range(num_bars):
-            h = np.zeros(num_bars)
-            h[bar] = h_fd
-            A_high = A + h
-            mass_high, stress_high = truss(
+            h_bar = h_fd * (1 + np.abs(A[bar]))
+            A_high = A.copy()
+            A_high[bar] += h_bar
+            mass_high, stress_high, _, _, _ = truss(
                 nodes1, nodes2, phi, A_high, L, E, rho, Fx, Fy, rigid)
-            dmass_dA[bar] = (mass_high - mass)/h_fd
-            dstress_dA[bar] = (stress_high - stress)/h_fd
+            dmass_dA[bar] = (mass_high - mass)/h_bar
+            dstress_dA[bar] = (stress_high - stress)/h_bar
+        dmass_dA = dmass_dA.T
+        dstress_dA = dstress_dA.T
 
     elif grad_method == 'CS':
         h_cplx = 1e-200
         for bar in range(num_bars):
             h = np.zeros(num_bars, dtype="complex")
             h[bar] = complex(0, h_cplx)
-            A_high = A + h
-            mass_cplx, stress_cplx = truss(
+            A_high = A.copy()
+            A_high = A_high + h
+            mass_cplx, stress_cplx, _, _, _ = truss(
                 nodes1, nodes2, phi, A_high, L, E, rho, Fx, Fy, rigid)
             dmass_dA[bar] = np.imag(mass_cplx)/h_cplx
             dstress_dA[bar] = np.imag(stress_cplx)/h_cplx
+        dmass_dA = dmass_dA.T
+        dstress_dA = dstress_dA.T
 
-    # elif grad_method == 'DT':
+    elif grad_method == 'DT':
+        # h_fd = np.max([math.ulp(k.real)**(1/2) for k in K.flatten()])
+        h_fd = 1e-8
+        for bar in range(num_bars):
+            h_bar = h_fd * (1 + np.abs(A[bar]))
+            A_high = A.copy()
+            A_high[bar] += h_bar
+            # get dr/dx
+            # h = np.zeros(num_bars)
+            # h[bar] = h_fd
+            # A_high = A.copy()
+            # A_high = A_high + h
+            _, _, K_high, d_high, _ = truss(
+                nodes1, nodes2, phi, A_high, L, E, rho, Fx, Fy, rigid)
+            dK_dA_i = (K_high@d_high - K@d_high)/h_bar
+            phi_dir[bar] = np.linalg.solve(K_high, dK_dA_i)
+
+        dstress_dA = np.dot(-S, phi_dir.T)
+
+    elif grad_method == 'AJ':
+        # h_fd = np.max([math.ulp(k.real)**(1/2) for k in K.flatten()])
+        h_fd = 1e-8
+        dK_dA = np.zeros((num_bars, np.shape(K)[0]))
+        for bar in range(num_bars):
+            # get dr/dx
+            h = np.zeros(num_bars)
+            h[bar] = h_fd
+            A_high = A.copy()
+            A_high = A_high + h
+            _, _, K_high, d_high, S = truss(
+                nodes1, nodes2, phi, A_high, L, E, rho, Fx, Fy, rigid)
+            dK_dA[bar] = (K_high@d_high - K@d_high)/h_fd
+            psi_adj[bar] = np.linalg.solve(K_high, S[bar])
+
+        dstress_dA = np.dot(-psi_adj, dK_dA)
 
     return mass, stress, dmass_dA, dstress_dA
