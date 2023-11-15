@@ -245,18 +245,11 @@ def tenbartruss(A, grad_method='FD', aggregate=False):
 
     # --- compute derivatives for provided grad_type ----
     num_bars = len(bars_node)
-    # df/dx total 10x10
+    # dMass/dx total 1x10
     dmass_dA = np.zeros(num_bars)
     # df/dx total 10x10
     dstress_dA = np.zeros((num_bars, num_bars))
-    # dr/dx partial 8x10
-    # starting as the transposed dims(10x8) for ease of programming, will transpose later
-    # dK_dA = np.zeros((num_bars, np.shape(K)[0]))
-    # phi for direct, 8x10
-    phi_dir = np.zeros((num_bars, np.shape(K)[0]))
-    # psi for adjoint, 10x8, dont need to be transposed cos we solve row by row
-    # psi_adj = np.zeros((num_bars, np.shape(K)[0]))
-    # psi_adj = np.zeros((np.shape(K)[0], num_bars))
+
     if grad_method == 'FD':
         # h_fd = np.max([math.ulp(s)**(1/2) for s in stress])
         h_fd = 1e-8
@@ -288,16 +281,20 @@ def tenbartruss(A, grad_method='FD', aggregate=False):
     elif grad_method == 'DT':
         # h_fd = np.max([math.ulp(k.real)**(1/2) for k in K.flatten()])
         h_fd = 1e-8
+        # dr/dx partial 8x10
+        # starting as the transposed dims(10x8) for ease of programming, will transpose later
+        dK_dA = np.zeros((num_bars, np.shape(K)[0]))
         for bar in range(num_bars):
             h_bar = h_fd * (1 + np.abs(A[bar]))
             A_high = A.copy()
             A_high[bar] += h_bar
             _, _, K_high, d_high, _ = truss(
                 nodes1, nodes2, phi, A_high, L, E, rho, Fx, Fy, rigid)
-            dK_dA_i = (K_high@d_high - K@d_high)/h_bar
-            phi_dir[bar] = np.linalg.solve(K, dK_dA_i)
+            dK_dA[bar] = (K_high@d_high - K@d_high)/h_bar
 
-        dstress_dA = -S @ phi_dir.T
+        # phi for direct, 8x10
+        phi_dir = np.linalg.solve(K, dK_dA.T)
+        dstress_dA = -S @ phi_dir
 
     # elif grad_method == 'DTKS':
     #     # h_fd = np.max([math.ulp(k.real)**(1/2) for k in K.flatten()])
@@ -320,6 +317,8 @@ def tenbartruss(A, grad_method='FD', aggregate=False):
     elif grad_method == 'AJ':
         # h_fd = np.max([math.ulp(k.real)**(1/2) for k in K.flatten()])
         h_fd = 1e-8
+        # dr/dx partial 8x10
+        # starting as the transposed dims(10x8) for ease of programming, will transpose later
         dK_dA = np.zeros((num_bars, np.shape(K)[0]))
         for bar in range(num_bars):
             h_bar = h_fd * (1 + np.abs(A[bar]))
@@ -329,6 +328,7 @@ def tenbartruss(A, grad_method='FD', aggregate=False):
                 nodes1, nodes2, phi, A_high, L, E, rho, Fx, Fy, rigid)
             dK_dA[bar] = (K_high@d_high - K@d_high)/h_bar
 
+        # psi for adjoint, 10x8
         psi_adj = np.linalg.solve(K, S.T)
         dstress_dA = -psi_adj.T @ dK_dA.T
 
