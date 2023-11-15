@@ -290,15 +290,10 @@ def tenbartruss(A, grad_method='FD', aggregate=False):
             h_bar = h_fd * (1 + np.abs(A[bar]))
             A_high = A.copy()
             A_high[bar] += h_bar
-            # get dr/dx
-            # h = np.zeros(num_bars)
-            # h[bar] = h_fd
-            # A_high = A.copy()
-            # A_high = A_high + h
             _, _, K_high, d_high, _ = truss(
                 nodes1, nodes2, phi, A_high, L, E, rho, Fx, Fy, rigid)
             dK_dA_i = (K_high@d_high - K@d_high)/h_bar
-            phi_dir[bar] = np.linalg.solve(K_high, dK_dA_i)
+            phi_dir[bar] = np.linalg.solve(K, dK_dA_i)
 
         dstress_dA = np.dot(-S, phi_dir.T)
 
@@ -307,16 +302,14 @@ def tenbartruss(A, grad_method='FD', aggregate=False):
         h_fd = 1e-8
         dK_dA = np.zeros((num_bars, np.shape(K)[0]))
         for bar in range(num_bars):
-            # get dr/dx
-            h = np.zeros(num_bars)
-            h[bar] = h_fd
+            h_bar = h_fd * (1 + np.abs(A[bar]))
             A_high = A.copy()
-            A_high = A_high + h
+            A_high[bar] += h_bar
             _, _, K_high, d_high, S = truss(
                 nodes1, nodes2, phi, A_high, L, E, rho, Fx, Fy, rigid)
-            dK_dA[bar] = (K_high@d_high - K@d_high)/h_fd
-            psi_adj[bar] = np.linalg.solve(K_high, S[bar])
+            dK_dA[bar] = (K_high@d_high - K@d_high)/h_bar
+            psi_adj[bar] = np.linalg.solve(K, S[bar])
 
-        dstress_dA = np.dot(-psi_adj, dK_dA)
+        dstress_dA = np.dot(-psi_adj, dK_dA.T)
 
     return mass, stress, dmass_dA, dstress_dA

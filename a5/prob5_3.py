@@ -12,8 +12,8 @@ if __name__ == "__main__":
         # 1.5,
     ]
     # grads = ['FD', 'CS']
-    grads = ['FD', 'CS', 'DT']
-    # grads = ['FD', 'CS', 'DT', 'AJ']
+    # grads = ['FD', 'CS', 'DT']
+    grads = ['FD', 'CS', 'DT', 'AJ']
     # grads = ['FD', 'CS', 'DT', 'AJ', 'AD']
     dstress_dAs = {}
     grad_set = set()
@@ -22,13 +22,11 @@ if __name__ == "__main__":
             mass, stress, dmass_dA, dstress_dA = tenbartruss(
                 np.full(num_bars, area), grad)
             dstress_dAs[grad] = dstress_dA
-            print(f"{grad} with bars = {area} :\n{dstress_dA}")
+            # print(f"{grad} with bars = {area} :\n{dstress_dA}")
 
     for grad1, dstress in dstress_dAs.items():
         for grad2, dstress2 in dstress_dAs.items():
             if grad1 is not grad2 and grad1+grad2 not in grad_set and grad2+grad1 not in grad_set:
                 grad_set.add(grad1+grad2)
                 print(
-                    f"Mean error between {grad1} and {grad2} is {np.mean(np.abs(dstress - dstress2)/np.abs(dstress2))}")
-                print(
-                    f"Max error between {grad1} and {grad2} is {np.max(np.abs(dstress - dstress2)/np.abs(dstress2))}")
+                    f"\nError between {grad1} and {grad2}\n- Mean: {np.mean(np.abs(dstress - dstress2)/np.abs(dstress2))}\n- Max: {np.max(np.abs(dstress - dstress2)/np.abs(dstress2))}")
