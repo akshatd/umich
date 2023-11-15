@@ -107,11 +107,12 @@ def truss(nodes1, nodes2, phi, A, L, E, rho, Fx, Fy, rigid):
     mass = np.sum(rho * A * L)
 
     # stiffness and stress matrices
-    K = np.zeros((DOF * n, DOF * n))
-    S = np.zeros((nbar, DOF * n))
     if A.dtype == 'complex128':
         K = np.zeros((DOF * n, DOF * n), dtype='complex')
-        S = np.zeros((nbar, DOF * n), dtype='complex')
+    else:
+        K = np.zeros((DOF * n, DOF * n))
+
+    S = np.zeros((nbar, DOF * n))
 
     for i in range(nbar):  # loop through each bar
 
@@ -254,7 +255,8 @@ def tenbartruss(A, grad_method='FD', aggregate=False):
     # phi for direct, 8x10
     phi_dir = np.zeros((num_bars, np.shape(K)[0]))
     # psi for adjoint, 10x8, dont need to be transposed cos we solve row by row
-    psi_adj = np.zeros((num_bars, np.shape(K)[0]))
+    # psi_adj = np.zeros((num_bars, np.shape(K)[0]))
+    # psi_adj = np.zeros((np.shape(K)[0], num_bars))
     if grad_method == 'FD':
         # h_fd = np.max([math.ulp(s)**(1/2) for s in stress])
         h_fd = 1e-8
@@ -295,7 +297,25 @@ def tenbartruss(A, grad_method='FD', aggregate=False):
             dK_dA_i = (K_high@d_high - K@d_high)/h_bar
             phi_dir[bar] = np.linalg.solve(K, dK_dA_i)
 
-        dstress_dA = np.dot(-S, phi_dir.T)
+        dstress_dA = -S @ phi_dir.T
+
+    # elif grad_method == 'DTKS':
+    #     # h_fd = np.max([math.ulp(k.real)**(1/2) for k in K.flatten()])
+    #     h_fd = 1e-8
+    #     ks_rho = 100
+    #     stress_max = np.max(stress)
+    #     ks_sum = np.sum(np.exp(ks_rho*(s - stress_max)) for s in stress)
+    #     ks_stress_agg = np.max(stress) + 1/ks_rho*ks_sum
+    #     for bar in range(num_bars):
+    #         h_bar = h_fd * (1 + np.abs(A[bar]))
+    #         A_high = A.copy()
+    #         A_high[bar] += h_bar
+    #         _, _, K_high, d_high, _ = truss(
+    #             nodes1, nodes2, phi, A_high, L, E, rho, Fx, Fy, rigid)
+    #         dK_dA_i = (K_high@d_high - K@d_high)/h_bar
+    #         phi_dir[bar] = np.linalg.solve(K, dK_dA_i)
+
+    #     dstress_dA = np.dot(-S, phi_dir.T)
 
     elif grad_method == 'AJ':
         # h_fd = np.max([math.ulp(k.real)**(1/2) for k in K.flatten()])
@@ -308,8 +328,8 @@ def tenbartruss(A, grad_method='FD', aggregate=False):
             _, _, K_high, d_high, S = truss(
                 nodes1, nodes2, phi, A_high, L, E, rho, Fx, Fy, rigid)
             dK_dA[bar] = (K_high@d_high - K@d_high)/h_bar
-            psi_adj[bar] = np.linalg.solve(K, S[bar])
 
-        dstress_dA = np.dot(-psi_adj, dK_dA.T)
+        psi_adj = np.linalg.solve(K, S.T)
+        dstress_dA = -psi_adj.T @ dK_dA.T
 
     return mass, stress, dmass_dA, dstress_dA
