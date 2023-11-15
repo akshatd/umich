@@ -76,7 +76,7 @@ Cross section area = 0.0051
 
 As expected, DT and AJ perform similarly, while FD and CS perform worse than those methods. It is interesting that DJ and AJ are not exactly the same, because mathematically they should be. This could be due to the loss of precision adding up as we multiply different matrices together for DT and AJ. The more mathematical operations we do, the more accuracy we will lose. Also, both of these methods are using a linear solver to solve a different set of equations, where the precision loss might also build up.
 
-Another interesting observation is that according to the theory, the CS method should be very accurate, but it is not as close to the DT and AJ methods as expected. This could be an issue with the
+Another interesting observation is that according to the theory, the CS method should be very accurate, but it is not as close to the DT and AJ methods as expected.
 
 ### Computational cost of derivatives
 

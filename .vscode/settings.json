@@ -1,4 +1,17 @@
 {
 	"python.analysis.autoImportCompletions": true,
-	"python.analysis.typeCheckingMode": "off"
+	"python.analysis.typeCheckingMode": "off",
+	"runOnSave.commands": [
+
+    {
+      "match": ".*\\.md$",
+      "command": "pandoc ${file} --resource-path=${fileDirname} -o ${fileDirname}/${fileBasenameNoExtension}.pdf && pdfunite prob*.pdf ${fileDirname}/assignment.pdf",
+      "runningStatusMessage": "Exporting ${fileBasename} to PDF...",
+      "finishStatusMessage": "${fileBasename} exported to PDF",
+      // "runIn": "backend",
+      "runIn": "terminal",
+      // "runIn": "vscode",
+    }
+  ],
+
 }
