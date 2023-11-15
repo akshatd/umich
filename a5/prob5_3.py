@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
-from timeit import timeit
+from time import time
 from truss import tenbartruss
 
 
@@ -19,10 +19,10 @@ if __name__ == "__main__":
     for area in areas:
         print(f"Bar area = {area}")
         for grad in grads:
-            bars = np.full(num_bars, area)
+            cs_area = np.full(num_bars, area)
             # bars = np.array([0.1, 0.01, 0.2, 0.02, 0.3,
             #                 0.03, 0.4, 0.04, 0.5, 0.05,])
-            mass, stress, dmass_dA, dstress_dA = tenbartruss(bars, grad)
+            mass, stress, dmass_dA, dstress_dA = tenbartruss(cs_area, grad)
             dstress_dAs[grad] = dstress_dA
             # print(f"{grad} with bars = {area} :\n{dstress_dA}")
         grad_set = set()
@@ -34,12 +34,13 @@ if __name__ == "__main__":
                         f"Error between {grad1} and {grad2}\n- Mean: {np.mean(np.abs(dstress - dstress2)/np.abs(dstress2))}\n- Max: {np.max(np.abs(dstress - dstress2)/np.abs(dstress2))}\n")
 
     # benchmark all the functions
-    # iters = 1000000
-    # for grad in grads:
-    #     bars = np.full(num_bars, 51e-5)
+    iters = 100
+    for grad in grads:
+        cs_area = np.full(num_bars, 51e-5)
+        start = time()
 
-    #     for i in range(iters):
-    #         mass, stress, dmass_dA, dstress_dA = tenbartruss(bars, grad)
-    #     print(timeit.timeit("test()", globals=locals()))
-    #     dstress_dAs[grad] = dstress_dA
-        # print(f"{grad} with bars = {area} :\n{dstress_dA}")
+        for i in range(iters):
+            mass, stress, dmass_dA, dstress_dA = tenbartruss(cs_area, grad)
+
+        end = time()
+        print(f"Time per fn call for {grad} = {(end-start)/iters*1000} ms")

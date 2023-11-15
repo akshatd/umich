@@ -32,13 +32,13 @@
 
 ![Comparison Graph](5_1_1.svg "5.1 Graph")
 
-Plot with underflow:
+Full plot with underflow:
 
 ![Comparison Graph](5_1_2.svg "5.1 Graph")
 
 ## 5.1.b
 
-The AD implementation consists of new functions for all the operators required in the given problem. All these functions take in a new data type, that consists of the value and a derivative. The derivative is initialized to 1 so that subsequent operations with the data can utilize the chain rule effectively.
+The AD implementation consists of new functions for all the operators required in the given problem. All these functions take in a new data type, that consists of the value and a derivative. The derivative is initialized to 1 as the seed so that subsequent operations with the data can utilize the chain rule effectively.
 The problem equation is then re-written using the the AD operators and we get the value and derivative when we evaluate the problem function directly.
 
 Using AD, at x = 1.5, fx = 4.497780053946162, dx = 4.053427893898621
