@@ -4,31 +4,25 @@ Using equation 6.42 for Example 6.12
 
 $$
 \newcommand{\p}{\mathop{}\!{\partial}}
-
 \begin{aligned}
-\frac{df}{dx} &= \frac{\p f}{\p x} - \frac{\p f}{\p u} \frac{\p r}{\p u}^{-1} \frac{\p r}{\p x}
-
-\\\\
-where \ \ \ \
+\frac{df}{dx} &= \frac{\p f}{\p x} - \frac{\p f}{\p u} \frac{\p r}{\p u}^{-1} \frac{\p r}{\p x} \\
+\\ where \\
 \frac{\p f}{\p x} &= 0 \\
 \frac{\p f}{\p u} &= S \\
 \frac{\p r}{\p u} &= K \\
 \frac{\p r}{\p x} &= using \ FD/CS
-
 \\\\
 For \ Direct \ method, \ we \ need \ \phi \ such \ that \\
 K \phi &= \frac{\p}{\p x}Ku \\
 which \ can \ be \ obtaied \ using \ a \ linear \ solver \\
 We \ can \ then \ use \ \phi \ to \ get \\
 \frac{df}{dx} &= -S\phi \\
-
 \\\\
 For \ Adjoint \ method, \ we \ need \ \psi \ such \ that \\
 K\psi = S^T \\
 which \ can \ be \ obtaied \ using \ a \ linear \ solver \\
 We \ can \ then \ use \ \psi \ to \ get \\
 \frac{df}{dx} &= -\psi^T \frac{\p}{\p x}Ku \\
-
 \end{aligned}
 $$
 
