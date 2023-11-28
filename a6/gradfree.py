@@ -13,7 +13,7 @@ class SimplexNode:
         self.fx = f(x)
 
     def __repr__(self) -> str:
-        return f'{self.x}, {self.fx}'
+        return f'{self.x}\t{self.fx:.15f}'
 
     def set(self, x) -> None:
         self.x = x

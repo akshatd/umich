@@ -12,10 +12,10 @@ if __name__ == "__main__":
     # 6.2.a
     print(f"6.2.a) Nelder-Mead optimum")
     print("iters\toptimal x\t\t\t\toptimal fx")
-    out = nelder_mead(fn.bean, x0, max_iter=100)
+    out = nelder_mead(fn.bean_f, x0, max_iter=100)
     xopt = out['simplex'][-1][0]
     print(f"{out['iters']}\t{xopt}")
-    plot_nelder_mead(fn.bean, out['simplex'],
+    plot_nelder_mead(fn.bean_f, out['simplex'],
                      "Nelder-Mead applied to the bean function")
 
     # 6.2.b
@@ -24,11 +24,12 @@ if __name__ == "__main__":
 
     noises = [10**(-exp) for exp in range(1, 10)]
     for noise in noises:
-        def bean_noisy(x): return fn.bean_noisy(x, noise)
-        out = nelder_mead(bean_noisy, x0, max_iter=100)
+        bean_noisy = fn.BeanNoisyPredictable(noise)
+        def bean_noisy_f(x): return bean_noisy.f(x)
+        out = nelder_mead(bean_noisy_f, x0, max_iter=100)
         xopt = out['simplex'][-1][0]
         print(f"{noise}\t{out['iters']}\t{xopt}")
-        plot_nelder_mead(bean_noisy, out['simplex'],
+        plot_nelder_mead(fn.bean_f, out['simplex'],
                          f"Nelder-Mead applied to the bean function with noise {noise}")
 
     # 6.2.c
@@ -37,7 +38,7 @@ if __name__ == "__main__":
 
     steps = [0.5*mult for mult in range(1, 10)]
     for step in steps:
-        def bean_check(x): return fn.bean_check(x, step)
+        def bean_check(x): return fn.bean_check_f(x, step)
         out = nelder_mead(bean_check, x0, max_iter=100)
         xopt = out['simplex'][-1][0]
         print(f"{step}\t{out['iters']}\t{xopt}")
