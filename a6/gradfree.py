@@ -62,12 +62,8 @@ def nelder_mead(f, guess, l=1, tau_x=1e-6, tau_f=1e-6, max_iter=100):
       max_iter: The maximum number of iterations to run the algorithm.
 
     Returns:
-      The minimum of the function.
+      An output dictionary with all the simplexes and the iterations taken.
     """
-
-    # Initialize the simplex.
-    # simplex = np.array([x0] + [x0 + np.random.randn(len(x0))
-    #                    for i in range(len(x0))])
 
     # Create a simplex with edge length l
     n = len(guess)
@@ -83,10 +79,10 @@ def nelder_mead(f, guess, l=1, tau_x=1e-6, tau_f=1e-6, max_iter=100):
         simplex.append(SimplexNode(node_x, f))
 
     simplex_list = [np.array(deepcopy(simplex))]
-    iter = 0
+    iters = 0
     # Iterate until the maximum number of iterations is reached or the simplex is sufficiently small.
     # Simplex size (Eq. 7.6) and standard deviation (Eq. 7.7)
-    while iter < max_iter and delta_x(simplex) > tau_x and delta_f(simplex) > tau_f:
+    while iters < max_iter and delta_x(simplex) > tau_x and delta_f(simplex) > tau_f:
         # Order from the lowest (best) to the highest f(x)
         simplex.sort(key=lambda node: node.fx)
 
@@ -140,14 +136,30 @@ def nelder_mead(f, guess, l=1, tau_x=1e-6, tau_f=1e-6, max_iter=100):
                         simplex[j].set(simplex[0].x + 0.5 *
                                        (simplex[j].x - simplex[0].x))
 
-        iter += 1
+        iters += 1
         simplex_list.append(np.array(deepcopy(simplex)))
 
-    # Return the best point in the simplex.
-    return min(simplex, key=lambda node: node.fx), np.array(simplex_list)
+    # Return the output
+    output = {
+        'simplex': np.array(simplex_list),
+        'iters': iters
+    }
+    return output
 
 
 def plot_nelder_mead(f, simplex_list, title):
+    """
+    Plot the Nelder-Mead optimization algorithm progress.
+
+    Args:
+        f (function): The objective function to be optimized.
+        simplex_list (list): List of simplices representing the progress of the Nelder-Mead algorithm.
+        title (str): The title of the plot.
+
+    Returns:
+        None
+    """
+
     # 2D simplex, so 3 points per item
     assert (simplex_list[0].shape[0] == 3)
 
@@ -169,9 +181,12 @@ def plot_nelder_mead(f, simplex_list, title):
     levels = np.linspace(np.min(data), np.max(data), 30)
     ax.contour(x1, x2, data, levels=levels)
 
-    # annotate starting x
-    ax.annotate(
-        "x0", xy=(simplex_list[0][0].x[0], simplex_list[0][0].x[1]), color='red')
+    # annotate starting and optimal x
+    x0 = (simplex_list[0][0].x[0], simplex_list[0][0].x[1])
+    ax.annotate("x0", xy=x0, xytext=(x0[0]-0.2, x0[1]-0.2), color='red')
+
+    xopt = (simplex_list[-1][0].x[0], simplex_list[-1][0].x[1])
+    ax.annotate("x*", xy=xopt, xytext=(xopt[0]+0.2, xopt[1]+0.2), color='red')
 
     # add simplex triangles
     for simplex in simplex_list:
