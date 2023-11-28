@@ -32,7 +32,7 @@ def delta_x(simplex) -> float:
     """
     delta = 0
     for i in range(len(simplex)-1):
-        delta += np.linalg.norm(simplex[i].x - simplex[len(simplex)-1].x)
+        delta += np.linalg.norm(simplex[i].x - simplex[-1].x)
     return delta
 
 
@@ -186,7 +186,7 @@ def plot_nelder_mead(f, simplex_list, title):
     ax.annotate("x0", xy=x0, xytext=(x0[0]-0.2, x0[1]-0.2), color='red')
 
     xopt = (simplex_list[-1][0].x[0], simplex_list[-1][0].x[1])
-    ax.annotate("x*", xy=xopt, xytext=(xopt[0]+0.2, xopt[1]+0.2), color='red')
+    ax.annotate("x*", xy=xopt, xytext=(xopt[0]+0.1, xopt[1]+0.1), color='red')
 
     # add simplex triangles
     for simplex in simplex_list:
