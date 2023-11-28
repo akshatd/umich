@@ -5,7 +5,7 @@
 
     {
       "match": ".*\\.md$",
-      "command": "pandoc ${file} --resource-path=${fileDirname} -o ${fileDirname}/${fileBasenameNoExtension}.pdf && pdfunite prob*.pdf ${fileDirname}/assignment.pdf",
+      "command": "pandoc ${file} --resource-path=${fileDirname} -o ${fileDirname}/${fileBasenameNoExtension}.pdf && pdfunite ${fileDirname}/prob*.pdf ${fileDirname}/submission.pdf",
       "runningStatusMessage": "Exporting ${fileBasename} to PDF...",
       "finishStatusMessage": "${fileBasename} exported to PDF",
       // "runIn": "backend",
