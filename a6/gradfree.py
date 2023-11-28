@@ -49,6 +49,20 @@ def delta_f(simplex) -> float:
     return np.std(np.array([node.fx for node in simplex]))
 
 
+def range_f(simplex) -> float:
+    """
+    Calculate the range of function values in a simplex.
+
+    Args:
+    simplex (list): A list of function values in the simplex.
+
+    Returns:
+    float: The range of the function values.
+    """
+    fxarray = np.array([node.fx for node in simplex])
+    return np.max(fxarray) - np.min(fxarray)
+
+
 def nelder_mead(f, guess, l=1, tau_x=1e-6, tau_f=1e-6, max_iter=100):
     """
     Nelder-Mead algorithm for finding the minimum of a function.
@@ -82,7 +96,7 @@ def nelder_mead(f, guess, l=1, tau_x=1e-6, tau_f=1e-6, max_iter=100):
     iters = 0
     # Iterate until the maximum number of iterations is reached or the simplex is sufficiently small.
     # Simplex size (Eq. 7.6) and standard deviation (Eq. 7.7)
-    while iters < max_iter and delta_x(simplex) > tau_x and delta_f(simplex) > tau_f:
+    while iters < max_iter and (delta_x(simplex) > tau_x or delta_f(simplex) > tau_f):
         # Order from the lowest (best) to the highest f(x)
         simplex.sort(key=lambda node: node.fx)
 

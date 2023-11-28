@@ -2,6 +2,22 @@ import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
 
+class FevWrapper:
+    def __init__(self, f):
+        self._f = f
+        self._fev = 0
+
+    def __call__(self, x):
+        self._fev += 1
+        return self._f(x)
+
+    def get_fev(self):
+        """
+        Returns the number of function calls made.
+        """
+        return self._fev
+
+
 def bean(x):
     """
     Bean function from Appendix D of the book
