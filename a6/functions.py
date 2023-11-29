@@ -17,6 +17,8 @@ class FevWrapper:
         """
         return self._fev
 
+# 6.2.a
+
 
 def bean_f(x):
     """
@@ -63,8 +65,20 @@ def bean_df(x):
 
     return g
 
+# 6.2.b
+
 
 class BeanNoisyPredictable:
+    """
+    A class representing a bean with noisy and predictable behavior.
+
+    Parameters:
+    - noise (float): The standard deviation of the noise added to the bean's behavior.
+    - x0 (list, optional): The initial position of the bean. Defaults to [0, 0].
+    - span (float, optional): The span of the bean's behavior. Defaults to 10.
+    - grid (int, optional): The number of points in the grid used to generate the noise mesh. Defaults to 1000.
+    """
+
     def __init__(self, noise, x0=[0, 0], span=10, grid=1000) -> None:
         self.noise = self.__generate_noise_mesh(noise, x0, span, grid)
 
@@ -75,9 +89,27 @@ class BeanNoisyPredictable:
         return RegularGridInterpolator((x1, x2), noise_mesh)
 
     def f(self, x):
+        """
+        Calculate the value of the bean's behavior at a given position.
+
+        Parameters:
+        - x (list): The position at which to evaluate the bean's behavior.
+
+        Returns:
+        - float: The value of the bean's behavior at the given position.
+        """
         return bean_f(x) + self.noise(x)[0]
 
     def df(self, x):
+        """
+        Calculate the gradient of the bean's behavior at a given position.
+
+        Parameters:
+        - x (list): The position at which to evaluate the gradient.
+
+        Returns:
+        - numpy.ndarray: The gradient of the bean's behavior at the given position.
+        """
         fd_step = 1e-6
         noise_g = np.zeros(2)
 
@@ -90,7 +122,18 @@ class BeanNoisyPredictable:
         return bean_df(x) + noise_g
 
     def fdf(self, x):
+        """
+        Calculate the value and gradient of the bean's behavior at a given position.
+
+        Parameters:
+        - x (list): The position at which to evaluate the bean's behavior and gradient.
+
+        Returns:
+        - tuple: A tuple containing the value and gradient of the bean's behavior at the given position.
+        """
         return self.f(x), self.df(x)
+
+# 6.2.c
 
 
 def bean_check_f(x, step):
@@ -145,6 +188,7 @@ def bean_check_df(x):
     return g
 
 
+# 6.2.d
 def p62d_f(x):
     return np.abs(x[0]) + 2*np.abs(x[1]) + x[2]**2
 
@@ -154,4 +198,59 @@ def p62d_df(x):
     g[0] = x[0]/np.abs(x[0])
     g[1] = 2*x[1]/np.abs(x[1])
     g[2] = 2*x[2]
+    return g
+
+# 6.3
+
+
+def rosenbrock_nd_f(x):
+    """
+    Rosenbrock function from Appendix D of the book
+
+    Parameters
+    ----------
+    x : ndarray
+        design variables
+
+    Returns
+    -------
+    f : float
+        function value
+    """
+    n = len(x)
+    f = 0
+    for i in range(n - 1):
+        f += 100*(x[i + 1] - x[i]**2)**2 + (1 - x[i])**2
+
+    return f
+
+
+def rosenbrock_nd_df(x):
+    """
+    Rosenbrock function from Appendix D of the book
+    Partial derivatives from https://math.stackexchange.com/questions/4464953/partial-derivatives-of-the-multidimensional-rosenbrock-function
+    Also available at https://docs.scipy.org/doc/scipy/tutorial/optimize.html#broyden-fletcher-goldfarb-shanno-algorithm-method-bfgs
+
+    Parameters
+    ----------
+    x : ndarray
+        design variables
+
+    Returns
+    -------
+    g : ndarray
+        objective gradient
+    """
+    n = len(x)
+
+    g = np.zeros(n)
+    for i in range(n):
+        if i == 0:  # no n-1 term
+            g[i] = -400*x[i]*(x[i+1]-x[i]**2) + 2*(x[i]-1)
+        elif i == n-1:  # no n+1 term
+            g[i] = 200*(x[i]-x[i-1]**2)
+        else:
+            g[i] = -400*x[i]*(x[i+1]-x[i]**2) + 2 * \
+                (x[i]-1) + 200*(x[i]-x[i-1]**2)
+
     return g

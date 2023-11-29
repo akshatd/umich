@@ -13,7 +13,7 @@ class SimplexNode:
         self.fx = f(x)
 
     def __repr__(self) -> str:
-        return f'{self.x}\t{self.fx:.15f}'
+        return f'{self.x}\t{self.fx: .13f}'
 
     def set(self, x) -> None:
         self.x = x
@@ -156,7 +156,8 @@ def nelder_mead(f, guess, l=1, tau_x=1e-6, tau_f=1e-6, max_iter=100):
     # Return the output
     output = {
         'simplex': np.array(simplex_list),
-        'iters': iters
+        'iters': iters,
+        'success': iters < max_iter
     }
     return output
 
