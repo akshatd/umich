@@ -66,8 +66,8 @@ if __name__ == "__main__":
 
     # 6.2.d
     x0 = [1, 1, 1]
-    print(f"6.2.d) Nelder-Mead optimum")
-    print("NM iters\tNM fev\tNM x*\t\t\t\t\tNM fx*\t\t\tBFGS fev\tBFGS x*\t\t\t\t\tBFGS fx*")
+    print(f"6.2.d) Nelder-Mead and BFGS optimum")
+    print("NM iters\tNM fev\tNM x*\t\t\t\t\t\tNM fx*\t\tBFGS fev\tBFGS x*\t\t\t\tBFGS fx*")
     wrapped_f = fn.FevWrapper(fn.p62d_f)
     out = nelder_mead(wrapped_f, x0, max_iter=1000)
     xopt = out['simplex'][-1][0]
@@ -75,5 +75,6 @@ if __name__ == "__main__":
     bfgs_progress = [x0]
     res = opt.minimize(fn.p62d_f, x0, jac=fn.p62d_df, method='BFGS',
                        callback=lambda xk: bfgs_progress.append(xk))
+    np.set_printoptions(precision=5, sign=' ', suppress=False)
     print(
-        f"{out['iters']}\t\t{wrapped_f.get_fev()}\t{xopt}\t{res.nfev}\t\t{res.x}\t{res.fun}")
+        f"{out['iters']}\t\t{wrapped_f.get_fev()}\t{xopt.x}\t{xopt.fx:.5e}\t{res.nfev}\t\t{res.x}\t{res.fun:.5e}")
