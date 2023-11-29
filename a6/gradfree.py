@@ -7,17 +7,16 @@ from copy import deepcopy
 
 
 class SimplexNode:
-    def __init__(self, x, f) -> None:
+    def __init__(self, x, fx) -> None:
         self.x = x
-        self.f = f
-        self.fx = f(x)
+        self.fx = fx
 
     def __repr__(self) -> str:
         return f'{self.x}\t{self.fx: .13f}'
 
-    def set(self, x) -> None:
+    def set(self, x, fx) -> None:
         self.x = x
-        self.fx = self.f(x)
+        self.fx = fx
 
 
 def delta_x(simplex) -> float:
@@ -81,7 +80,7 @@ def nelder_mead(f, guess, l=1, tau_x=1e-6, tau_f=1e-6, max_iter=100):
 
     # Create a simplex with edge length l
     n = len(guess)
-    x0 = SimplexNode(guess, f)
+    x0 = SimplexNode(guess, f(guess))
     sqrt2 = math.sqrt(2)
     sqrtnpl1 = math.sqrt(n+1)
     simplex = [x0]
@@ -90,7 +89,7 @@ def nelder_mead(f, guess, l=1, tau_x=1e-6, tau_f=1e-6, max_iter=100):
         # s(j) given by Eq. 7.2
         node_x = np.array(guess) + (l/(n*sqrt2)) * (sqrtnpl1-1)
         node_x[j] += (l/sqrt2)
-        simplex.append(SimplexNode(node_x, f))
+        simplex.append(SimplexNode(node_x, f(node_x)))
 
     simplex_list = [np.array(deepcopy(simplex))]
     iters = 0
@@ -107,48 +106,54 @@ def nelder_mead(f, guess, l=1, tau_x=1e-6, tau_f=1e-6, max_iter=100):
         xr = xc + (xc - simplex[-1].x)
 
         # Is reﬂected point is better than the best?
-        if f(xr) < simplex[0].fx:
+        fxr = f(xr)
+        if fxr < simplex[0].fx:
             # Expansion, Eq. 7.3 with 𝛼 = 2
             xe = xc + 2 * (xc - simplex[-1].x)
             # Is expanded point better than the best?
-            if f(xe) < simplex[0].fx:
+            fxe = f(xe)
+            if fxe < simplex[0].fx:
                 # Accept expansion and replace worst point
-                simplex[-1].set(xe)
+                simplex[-1].set(xe, fxe)
             else:
                 # Accept reﬂection
-                simplex[-1].set(xr)
+                simplex[-1].set(xr, fxr)
 
         # Is reﬂected better than second worst?
-        elif f(xr) <= simplex[-2].fx:
+        elif fxr <= simplex[-2].fx:
             # Accept reﬂected point
-            simplex[-1].set(xr)
+            simplex[-1].set(xr, fxr)
 
         else:
             # Is reﬂected point worse than the worst?
-            if f(xr) > simplex[-1].fx:
+            if fxr > simplex[-1].fx:
                 # Inside contraction, Eq. 7.3 with 𝛼 = −0.5
                 xic = xc - 0.5 * (xc - simplex[-1].x)
                 # Inside contraction better than worst?
-                if f(xic) < simplex[-1].fx:
+                fxic = f(xic)
+                if fxic < simplex[-1].fx:
                     # Accept inside contraction
-                    simplex[-1].set(xic)
+                    simplex[-1].set(xic, fxic)
                 else:
                     # Shrink, Eq. 7.5 with 𝛾 = 0.5
                     for j in range(1, len(simplex)):
-                        simplex[j].set(simplex[0].x + 0.5 *
-                                       (simplex[j].x - simplex[0].x))
+                        node_x = simplex[0].x + 0.5 * \
+                            (simplex[j].x - simplex[0].x)
+                        simplex[j].set(node_x, f(node_x))
             else:
                 # Outside contraction, Eq. 7.3 with 𝛼 = 0.5
                 xoc = xc + 0.5 * (xc - simplex[-1].x)
                 # Is contraction better than reﬂection?
-                if f(xoc) < f(xr):
+                fxoc = f(xoc)
+                if fxoc < f(xr):
                     # Accept outside contraction
-                    simplex[-1].set(xoc)
+                    simplex[-1].set(xoc, fxoc)
                 else:
                     # Shrink, Eq. 7.5 with 𝛾
                     for j in range(1, len(simplex)):
-                        simplex[j].set(simplex[0].x + 0.5 *
-                                       (simplex[j].x - simplex[0].x))
+                        node = simplex[0].x + 0.5 * \
+                            (simplex[j].x - simplex[0].x)
+                        simplex[j].set(node, f(node))
 
         iters += 1
         simplex_list.append(np.array(deepcopy(simplex)))
