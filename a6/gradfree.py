@@ -161,7 +161,7 @@ def nelder_mead(f, guess, l=1, tau_x=1e-6, tau_f=1e-6, max_iter=100):
     return output
 
 
-def plot_nelder_mead(f, simplex_list, title):
+def plot_nm(f, simplex_list, title):
     """
     Plot the Nelder-Mead optimization algorithm progress.
 
@@ -200,7 +200,7 @@ def plot_nelder_mead(f, simplex_list, title):
     ax.annotate("x0", xy=x0, xytext=(x0[0]-0.2, x0[1]-0.2), color='red')
 
     xopt = (simplex_list[-1][0].x[0], simplex_list[-1][0].x[1])
-    ax.annotate("x*", xy=xopt, xytext=(xopt[0]+0.1, xopt[1]+0.1), color='red')
+    ax.annotate("x*", xy=xopt, xytext=(xopt[0]+0.2, xopt[1]+0.2), color='red')
 
     # add simplex triangles
     for simplex in simplex_list:
@@ -209,5 +209,67 @@ def plot_nelder_mead(f, simplex_list, title):
 
     ax.set_xlabel("x1")
     ax.set_ylabel("x2")
+    plt.title(f'{title}')
+    plt.show()
+
+
+def plot_nm_bfgs(f, simplex_list, bfgs_progress, title):
+    """
+    Plot the Nelder-Mead and BFGS optimization algorithm progress.
+
+    Args:
+        f (function): The objective function to be optimized.
+        simplex_list (list): List of simplices representing the progress of the Nelder-Mead algorithm.
+        title (str): The title of the plot.
+
+    Returns:
+        None
+    """
+
+    # 2D simplex, so 3 points per item
+    assert (simplex_list[0].shape[0] == 3)
+
+    # get min and max for plotting
+    x_list = []
+    for simplex in simplex_list:
+        x_list += ([node.x for node in simplex])
+    x1_min, x2_min = np.min(x_list, axis=0)
+    x1_max, x2_max = np.max(x_list, axis=0)
+
+    # prep data for contours
+    spread = 1
+    x1 = np.linspace(x1_min-spread, x1_max+spread, 1000)
+    x2 = np.linspace(x2_min-spread, x2_max+spread, 1000)
+    x1, x2 = np.meshgrid(x1, x2)
+    data = f([x1, x2])
+
+    _, ax = plt.subplots()
+    levels = np.linspace(np.min(data), np.max(data), 30)
+    ax.contour(x1, x2, data, levels=levels)
+
+    # annotate starting and optimal x
+    x0 = (simplex_list[0][0].x[0], simplex_list[0][0].x[1])
+    ax.annotate("x0", xy=x0, xytext=(x0[0]-0.2, x0[1]-0.2), color='red')
+
+    xopt = (simplex_list[-1][0].x[0], simplex_list[-1][0].x[1])
+    ax.annotate("x*", xy=xopt, xytext=(xopt[0]+0.2, xopt[1]+0.2), color='red')
+
+    # add simplex triangles
+    putlabel = True
+    for simplex in simplex_list:
+        if putlabel:
+            ax.add_patch(patches.Polygon(
+                [node.x for node in simplex], edgecolor='red', fill=False, label='Nelder-Mead'))
+            putlabel = False
+        else:
+            ax.add_patch(patches.Polygon(
+                [node.x for node in simplex], edgecolor='red', fill=False))
+
+    # add BFGS progress
+    x, y = np.array(bfgs_progress).T
+    ax.plot(x, y, '-o', label='BFGS')
+    ax.set_xlabel("x1")
+    ax.set_ylabel("x2")
+    ax.legend()
     plt.title(f'{title}')
     plt.show()

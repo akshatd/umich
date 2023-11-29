@@ -94,7 +94,7 @@ def bean_df(x):
 
 
 class BeanNoisyPredictable:
-    def __init__(self, noise, x0=[0, 0], span=5, grid=100) -> None:
+    def __init__(self, noise, x0=[0, 0], span=10, grid=1000) -> None:
         self.noise = self.__generate_noise_mesh(noise, x0, span, grid)
 
     def __generate_noise_mesh(self, noise, x0, span, grid):
@@ -111,15 +111,47 @@ class BeanNoisyPredictable:
         noise_g = np.zeros(2)
 
         h = [fd_step, 0]
-        noise_g[0] = (self.noise(x+h) - self.noise(x-h))/(2*h)
+        noise_g[0] = (self.noise(x+h) - self.noise(x-h))/(2*fd_step)
 
         h = [0, fd_step]
-        noise_g[1] = (self.noise(x+h) - self.noise(x-h))/(2*h)
+        noise_g[1] = (self.noise(x+h) - self.noise(x-h))/(2*fd_step)
 
         return bean_df(x) + noise_g
 
-    def f_and_df(self, x):
+    def fdf(self, x):
         return self.f(x), self.df(x)
+
+
+def bean_check(x, step):
+    """
+    Bean function from Appendix D of the book
+
+    Parameters
+    ----------
+    x : ndarray, shape (2,)
+        design variables
+    step : float
+        step for checkerboarding to be added
+
+    Returns
+    -------
+    f : float
+        function value
+    g : ndarray, shape (2,)
+        objective gradient
+    """
+
+    x1 = x[0]
+    x2 = x[1]
+
+    f = (1. - x1)**2 + (1. - x2)**2 + 0.5 * (2 * x2 - x1**2)**2
+    check = step*np.ceil(np.sin(np.pi*x1) * np.sin(np.pi*x2))
+
+    g = np.zeros(2)
+    g[0] = -2. * (1 - x1) - 2. * x1 * (2 * x2 - x1**2)
+    g[1] = -2. * (1 - x2) + 2. * (2 * x2 - x1**2)
+
+    return f + check, g
 
 
 def bean_check_f(x, step):
