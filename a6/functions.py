@@ -18,35 +18,6 @@ class FevWrapper:
         return self._fev
 
 
-def bean(x):
-    """
-    Bean function from Appendix D of the book
-
-    Parameters
-    ----------
-    x : ndarray, shape (2,)
-        design variables
-
-    Returns
-    -------
-    f : float
-        function value
-    g : ndarray, shape (2,)
-        objective gradient
-    """
-
-    x1 = x[0]
-    x2 = x[1]
-
-    f = (1. - x1)**2 + (1. - x2)**2 + 0.5 * (2 * x2 - x1**2)**2
-
-    g = np.zeros(2)
-    g[0] = -2. * (1 - x1) - 2. * x1 * (2 * x2 - x1**2)
-    g[1] = -2. * (1 - x2) + 2. * (2 * x2 - x1**2)
-
-    return f, g
-
-
 def bean_f(x):
     """
     Bean function from Appendix D of the book
@@ -122,38 +93,6 @@ class BeanNoisyPredictable:
         return self.f(x), self.df(x)
 
 
-def bean_check(x, step):
-    """
-    Bean function from Appendix D of the book
-
-    Parameters
-    ----------
-    x : ndarray, shape (2,)
-        design variables
-    step : float
-        step for checkerboarding to be added
-
-    Returns
-    -------
-    f : float
-        function value
-    g : ndarray, shape (2,)
-        objective gradient
-    """
-
-    x1 = x[0]
-    x2 = x[1]
-
-    f = (1. - x1)**2 + (1. - x2)**2 + 0.5 * (2 * x2 - x1**2)**2
-    check = step*np.ceil(np.sin(np.pi*x1) * np.sin(np.pi*x2))
-
-    g = np.zeros(2)
-    g[0] = -2. * (1 - x1) - 2. * x1 * (2 * x2 - x1**2)
-    g[1] = -2. * (1 - x2) + 2. * (2 * x2 - x1**2)
-
-    return f + check, g
-
-
 def bean_check_f(x, step):
     """
     Bean function from Appendix D of the book
@@ -179,5 +118,40 @@ def bean_check_f(x, step):
     return f + check
 
 
+def bean_check_df(x):
+    """
+    Bean function from Appendix D of the book
+
+    Parameters
+    ----------
+    x : ndarray, shape (2,)
+        design variables
+    step : float
+        step for checkerboarding to be added
+
+    Returns
+    -------
+    g : ndarray, shape (2,)
+        objective gradient
+    """
+
+    x1 = x[0]
+    x2 = x[1]
+
+    g = np.zeros(2)
+    g[0] = -2. * (1 - x1) - 2. * x1 * (2 * x2 - x1**2)
+    g[1] = -2. * (1 - x2) + 2. * (2 * x2 - x1**2)
+
+    return g
+
+
 def p62d_f(x):
-    return np.abs(x[0]) + 2*np.abs(x[1]) + x[2]**3
+    return np.abs(x[0]) + 2*np.abs(x[1]) + x[2]**2
+
+
+def p62d_df(x):
+    g = np.zeros(3)
+    g[0] = x[0]/np.abs(x[0])
+    g[1] = 2*x[1]/np.abs(x[1])
+    g[2] = 2*x[2]
+    return g

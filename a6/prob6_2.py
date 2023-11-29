@@ -54,12 +54,26 @@ if __name__ == "__main__":
         out = nelder_mead(wrapped_f, x0, max_iter=1000)
         xopt = out['simplex'][-1][0]
 
-        def bean_check(x): return fn.bean_check(x, step)
+        def bean_check_f(x): return fn.bean_check_f(x, step)
         bfgs_progress = [x0]
-        res = opt.minimize(bean_check, x0, jac=True, method='BFGS',
+        res = opt.minimize(bean_check_f, x0, jac=fn.bean_check_df, method='BFGS',
                            callback=lambda xk: bfgs_progress.append(xk))
 
         print(
             f"{step}\t{out['iters']}\t\t{wrapped_f.get_fev()}\t{xopt}\t{res.nfev}\t\t{res.x}\t{res.fun}")
-        plot_nm_bfgs(bean_check, out['simplex'], bfgs_progress,
+        plot_nm_bfgs(bean_check_f, out['simplex'], bfgs_progress,
                      f"Nelder-Mead vs BFGS on the bean function with step {step}")
+
+    # 6.2.d
+    x0 = [1, 1, 1]
+    print(f"6.2.d) Nelder-Mead optimum")
+    print("NM iters\tNM fev\tNM x*\t\t\t\t\tNM fx*\t\t\tBFGS fev\tBFGS x*\t\t\t\t\tBFGS fx*")
+    wrapped_f = fn.FevWrapper(fn.p62d_f)
+    out = nelder_mead(wrapped_f, x0, max_iter=1000)
+    xopt = out['simplex'][-1][0]
+
+    bfgs_progress = [x0]
+    res = opt.minimize(fn.p62d_f, x0, jac=fn.p62d_df, method='BFGS',
+                       callback=lambda xk: bfgs_progress.append(xk))
+    print(
+        f"{out['iters']}\t\t{wrapped_f.get_fev()}\t{xopt}\t{res.nfev}\t\t{res.x}\t{res.fun}")
