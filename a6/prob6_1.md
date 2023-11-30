@@ -1,3 +1,7 @@
+---
+geometry: "margin=2cm"
+---
+
 # AE588 Assignment 6 - akshatdy
 
 ## 6.1
