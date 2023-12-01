@@ -26,7 +26,7 @@ if __name__ == "__main__":
     baseline_fx = res.fun
 
     # 6.2.b
-    print(f"\n6.2.b) Nelder-Mead optimum with noise")
+    print(f"\n6.2.b) Nelder-Mead and BFGS optimum with noise")
     # not printing the NM opt success cos i have made sure to give enough iterations that it always passes
     print("noise\tNM fev\tNM x*\t\t\t\tNM fx*\t\tBFGS conv\tBFGS f+jev\tBFGS x*\t\t\t\tBFGS fx*")
     np.set_printoptions(precision=8, sign=' ', suppress=True)

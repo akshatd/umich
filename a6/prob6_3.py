@@ -11,11 +11,15 @@ if __name__ == "__main__":
     # 6.3
     print(f"6.3) Optimums")
     print("dims\tmy NM fev\tNM fx*\t\tScipy NM fev\tScipy NM fx*\tBFGS FD fev\tBFGS FD fx*\tBFGS AG f+jev\tBFGS AG fx*")
-    dims = [2, 4, 8, 16, 32, 64]
     # dims = [2, 4, 8, 16, 32, 64, 128]
+    dims = [2, 4, 8, 16, 32, 64]
     # dims = [2, 4, 8, 16]
     print_dict = {
         'dims': [],
+        'nm x': [],
+        'scipy nm x': [],
+        'bfgs fd x': [],
+        'bfgs ag x': [],
         'nm fx': [],
         'scipy nm fx': [],
         'bfgs fd fx': [],
@@ -33,17 +37,20 @@ if __name__ == "__main__":
     for dim in dims:
         print_dict['dims'].append(dim)
         x0 = np.zeros(dim)
+        xopt = np.ones(dim)
 
         # my NM
         wrapped_f = fn.FevWrapper(fn.rosenbrock_nd_f)
         out = nelder_mead(wrapped_f, x0, max_iter=10000)
-        xopt = out['simplex'][-1][0]
-        print_dict['nm fx'].append(xopt.fx)
+        nm_opt = out['simplex'][-1][0]
+        print_dict['nm x'].append(np.linalg.norm(nm_opt.x - xopt))
+        print_dict['nm fx'].append(nm_opt.fx)
         print_dict['nm fev'].append(wrapped_f.get_fev())
         print_dict['nm conv'].append(out['success'])
 
         # scipy NM
         res_sp_nm = opt.minimize(fn.rosenbrock_nd_f, x0, method='Nelder-Mead')
+        print_dict['scipy nm x'].append(np.linalg.norm(res_sp_nm.x-xopt))
         print_dict['scipy nm fx'].append(res_sp_nm.fun)
         print_dict['scipy nm fev'].append(res_sp_nm.nfev)
         print_dict['scipy nm conv'].append(res_sp_nm.status == 0)
@@ -51,6 +58,7 @@ if __name__ == "__main__":
         # scipy BFGS FD
         res_sp_bfgs_fd = opt.minimize(
             fn.rosenbrock_nd_f, x0, method='BFGS', jac=False)
+        print_dict['bfgs fd x'].append(np.linalg.norm(res_sp_bfgs_fd.x-xopt))
         print_dict['bfgs fd fx'].append(res_sp_bfgs_fd.fun)
         print_dict['bfgs fd fev'].append(res_sp_bfgs_fd.nfev)
         print_dict['bfgs fd conv'].append(res_sp_bfgs_fd.status == 0)
@@ -58,6 +66,7 @@ if __name__ == "__main__":
         # scipy BFGS AG
         res_sp_bfgs_ag = opt.minimize(
             fn.rosenbrock_nd_f, x0, method='BFGS', jac=fn.rosenbrock_nd_df)
+        print_dict['bfgs ag x'].append(np.linalg.norm(res_sp_bfgs_ag.x-xopt))
         print_dict['bfgs ag fx'].append(res_sp_bfgs_ag.fun)
         print_dict['bfgs ag fev'].append(
             res_sp_bfgs_ag.nfev + res_sp_bfgs_ag.njev)
@@ -71,12 +80,23 @@ if __name__ == "__main__":
     plt.plot(dims, print_dict['scipy nm fev'], label="Scipy Nelder-Mead")
     plt.plot(dims, print_dict['bfgs fd fev'], label="BFGS Finite Difference")
     plt.plot(dims, print_dict['bfgs ag fev'], label="BFGS Analytical Gradient")
+    plt.grid(visible=True, which='both', axis='both')
+    plt.xlabel("Dimensions")
+    plt.ylabel("Function Evaluations")
+    plt.loglog()
     plt.legend()
     plt.show()
 
     # print like the table i need in markdown
     # print(f"| dims | {' | '.join(f'{x}' for x in print_dict['dims'])} |")
     # print(f"| - | {' - |'*len(dims)}")
+    # print(f"| NM x | {' | '.join(f'{x: .3e}' for x in print_dict['nm x'])} |")
+    # print(
+    #     f"| scipy NM x | {' | '.join(f'{x: .3e}' for x in print_dict['scipy nm x'])} |")
+    # print(
+    #     f"| BFGS FD x | {' | '.join(f'{x: .3e}' for x in print_dict['bfgs fd x'])} |")
+    # print(
+    #     f"| BFGS AG x | {' | '.join(f'{x: .3e}' for x in print_dict['bfgs ag x'])} |")
     # print(
     #     f"| NM fx | {' | '.join(f'{x: .3e}' for x in print_dict['nm fx'])} |")
     # print(
